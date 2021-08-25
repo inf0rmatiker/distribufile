@@ -1,2 +1,3 @@
 # distribufile
-Repository for maintaining development efforts on the CS555: Distributed Systems class, Assignment 1.
+
+Project for managing a simplistic distributed file system with limited functionality. Written in Java.
