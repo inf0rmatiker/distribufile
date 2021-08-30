@@ -61,6 +61,18 @@ public class Message {
 
     // --- Common message utility functions ---
 
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof Message)) return false;
+        Message otherMessage = (Message) other;
+        return (this.getType().equals(otherMessage.getType()) &&
+                this.getHostname().equals(otherMessage.getHostname()) &&
+                this.getIpAddress().equals(otherMessage.getIpAddress()) &&
+                this.getPort().equals(otherMessage.getPort())
+        );
+    }
+
     /**
      * Marshals/packs the object header fields into the message's byte array representation.
      * The message header is represented as follows:
@@ -174,17 +186,5 @@ public class Message {
             case HEARTBEAT_MAJOR: return 1;
             default: return -1;
         }
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) return true;
-        if (!(other instanceof Message)) return false;
-        Message otherMessage = (Message) other;
-        return (this.getType().equals(otherMessage.getType()) &&
-                this.getHostname().equals(otherMessage.getHostname()) &&
-                this.getIpAddress().equals(otherMessage.getIpAddress()) &&
-                this.getPort().equals(otherMessage.getPort())
-        );
     }
 }
