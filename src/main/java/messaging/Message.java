@@ -79,10 +79,8 @@ public class Message {
 
         // Write header fields to data output stream
         dataOutStream.writeInt(integerFromType(this.type));
-        dataOutStream.writeInt(this.hostname.length());
-        dataOutStream.writeBytes(this.hostname);
-        dataOutStream.writeInt(this.ipAddress.length());
-        dataOutStream.writeBytes(this.ipAddress);
+        writeString(dataOutStream, this.hostname);
+        writeString(dataOutStream, this.ipAddress);
         dataOutStream.writeInt(this.port);
 
         // Flush DataOutputStream to the ByteArrayOutputStream, then collect bytes
@@ -92,6 +90,64 @@ public class Message {
         // Close streams gracefully
         dataOutStream.close();
         byteOutStream.close();
+    }
+
+    /**
+     * Unmarshals/unpacks the header fields from the message's byte array into the instance variables.
+     * The message header is represented as follows:
+     * - message type (int 4 bytes)
+     * - hostname length (int 4 bytes)
+     * - hostname string (char[] n bytes)
+     * - ip length (int 4 bytes)
+     * - ip string (char[] n bytes)
+     * - port (int 4 bytes)
+     * @throws IOException
+     */
+    public void unmarshalHeader() throws IOException {
+
+        // Open DataInputStream for reading data from a byte array
+        ByteArrayInputStream byteInputStream = new ByteArrayInputStream(this.marshalledBytes);
+        DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+        // Read header fields
+        this.type = typeFromInteger(dataInputStream.readInt());
+        this.hostname = readString(dataInputStream);
+        this.ipAddress = readString(dataInputStream);
+        this.port = dataInputStream.readInt();
+
+        // Close streams gracefully
+        dataInputStream.close();
+        byteInputStream.close();
+    }
+
+    // --- Static helper functions ---
+
+    /**
+     * Reads a string from the DataInputStream passed in as follows:
+     * 1. Reads the string length as an integer.
+     * 2. Reads the string bytes; creates and returns a string from said bytes.
+     * @param dataInputStream The DataInputStream containing the bytes we are reading.
+     * @return The String, whose length is specified before the string bytes.
+     * @throws IOException
+     */
+    public static String readString(DataInputStream dataInputStream) throws IOException {
+        int stringLength = dataInputStream.readInt();
+        byte[] stringBytes = new byte[stringLength];
+        dataInputStream.readFully(stringBytes, 0, stringLength);
+        return new String(stringBytes);
+    }
+
+    /**
+     * Writes a string to the DataOutputString passed in as follows:
+     * 1. Writes the string length as an integer
+     * 2. Writes the string bytes
+     * @param dataOutputStream DataOutputStream containing the byte array we are writing to
+     * @param value The String value we are writing to the byte array
+     * @throws IOException
+     */
+    public static void writeString(DataOutputStream dataOutputStream, String value) throws IOException {
+        dataOutputStream.writeInt(value.length());
+        dataOutputStream.writeBytes(value);
     }
 
     /**
@@ -118,5 +174,17 @@ public class Message {
             case HEARTBEAT_MAJOR: return 1;
             default: return -1;
         }
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof Message)) return false;
+        Message otherMessage = (Message) other;
+        return (this.getType().equals(otherMessage.getType()) &&
+                this.getHostname().equals(otherMessage.getHostname()) &&
+                this.getIpAddress().equals(otherMessage.getIpAddress()) &&
+                this.getPort().equals(otherMessage.getPort())
+        );
     }
 }

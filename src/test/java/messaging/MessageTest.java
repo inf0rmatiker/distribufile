@@ -3,7 +3,7 @@ package messaging;
 import org.junit.jupiter.api.Test;
 import messaging.Message.MessageType;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.UnknownHostException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -82,6 +82,32 @@ public class MessageTest {
     }
 
     @Test
+    public void testWriteStringByteLength() {
+        String testString = "random string";
+        try {
+
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+
+            Message.writeString(dataOutStream, testString);
+
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up
+            dataOutStream.close();
+            byteOutStream.close();
+
+            int expected = Integer.BYTES + testString.length();
+            int actual = testBytes.length;
+            assertEquals(expected, actual);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
     public void testMarshalHeaderByteLength() {
         String testHostname = "shark";
         String testIpAddr = "129.82.45.138";
@@ -97,4 +123,125 @@ public class MessageTest {
         }
     }
 
+    @Test
+    public void testReadStringNonempty() {
+        String expected = "random string";
+
+        try {
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            dataOutStream.writeInt(expected.length());
+            dataOutStream.writeBytes(expected);
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+            dataOutStream.close();
+            byteOutStream.close();
+
+            // Init test input stream
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(testBytes);
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+            String actual = Message.readString(dataInputStream);
+
+            // Clean up
+            dataInputStream.close();
+            byteInputStream.close();
+
+            assertEquals(expected, actual);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testReadStringEmpty() {
+        String expected = "";
+
+        try {
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            dataOutStream.writeInt(expected.length());
+            dataOutStream.writeBytes(expected);
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+            dataOutStream.close();
+            byteOutStream.close();
+
+            // Init test input stream
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(testBytes);
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+            String actual = Message.readString(dataInputStream);
+
+            // Clean up
+            dataInputStream.close();
+            byteInputStream.close();
+
+            assertEquals(expected, actual);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testUnmarshalHeader() {
+        MessageType expectedType = MessageType.HEARTBEAT_MAJOR;
+        String expectedHostname = "shark";
+        String expectedIpAddr = "129.82.45.138";
+        int expectedPort = 9001;
+
+        try {
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            dataOutStream.writeInt(1);
+            dataOutStream.writeInt(expectedHostname.length());
+            dataOutStream.writeBytes(expectedHostname);
+            dataOutStream.writeInt(expectedIpAddr.length());
+            dataOutStream.writeBytes(expectedIpAddr);
+            dataOutStream.writeInt(expectedPort);
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+            dataOutStream.close();
+            byteOutStream.close();
+
+            // Init test input stream
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(testBytes);
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+            // Clean up
+            dataInputStream.close();
+            byteInputStream.close();
+
+            Message message = new Message(testBytes);
+            message.unmarshalHeader();
+
+            assertEquals(expectedType, message.getType());
+            assertEquals(expectedHostname, message.getHostname());
+            assertEquals(expectedIpAddr, message.getIpAddress());
+            assertEquals(expectedPort, message.getPort());
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testMarshalToUnmarshal() {
+        MessageType testType = MessageType.HEARTBEAT_MAJOR;
+        String testHostname = "shark";
+        String testIpAddr = "129.82.45.138";
+        int testPort = 9001;
+
+        Message a = new Message(testType, testHostname, testIpAddr, testPort);
+        try {
+            a.marshalHeader();
+            Message b = new Message(a.getMarshalledBytes());
+            b.unmarshalHeader();
+            assertEquals(a, b);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
 }
