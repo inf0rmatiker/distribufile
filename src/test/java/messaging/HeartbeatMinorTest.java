@@ -3,9 +3,6 @@ package messaging;
 import messaging.Message.MessageType;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
-import java.net.UnknownHostException;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 
