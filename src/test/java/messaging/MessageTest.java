@@ -3,6 +3,7 @@ package messaging;
 import org.junit.jupiter.api.Test;
 import messaging.Message.MessageType;
 
+import java.io.IOException;
 import java.net.UnknownHostException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -67,6 +68,33 @@ public class MessageTest {
     public void testTypeFromIntegerInvalid() {
         assertNull(Message.typeFromInteger(-1));
         assertNull(Message.typeFromInteger(MessageType.values().length));
+    }
+
+    @Test
+    public void testIntegerFromTypeValid() {
+        MessageType[] types = new MessageType[]{MessageType.HEARTBEAT_MINOR, MessageType.HEARTBEAT_MAJOR};
+        int[] expecteds = new int[]{0, 1};
+        for (int i = 0; i < types.length; ++i) {
+            int expected = expecteds[i];
+            Integer actual = Message.integerFromType(types[i]);
+            assertEquals(expected, actual);
+        }
+    }
+
+    @Test
+    public void testMarshalHeaderByteLength() {
+        String testHostname = "shark";
+        String testIpAddr = "129.82.45.138";
+        Message message = new Message(MessageType.HEARTBEAT_MAJOR, testHostname, testIpAddr, 9001);
+        try {
+            message.marshalHeader();
+            assertNotNull(message.getMarshalledBytes());
+            int expectedHeaderByteLength = (4 * Integer.BYTES) + (testHostname.length() + testIpAddr.length());
+            int actualHeaderByteLength = message.getMarshalledBytes().length;
+            assertEquals(expectedHeaderByteLength, actualHeaderByteLength);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
     }
 
 }

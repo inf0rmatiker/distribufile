@@ -2,10 +2,7 @@ package messaging;
 
 import util.Host;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.UnknownHostException;
 
 public class Message {
@@ -67,24 +64,34 @@ public class Message {
     /**
      * Marshals/packs the object header fields into the message's byte array representation.
      * The message header is represented as follows:
-     * - message type (int 8 bytes)
-     * - hostname length (int 8 bytes)
+     * - message type (int 4 bytes)
+     * - hostname length (int 4 bytes)
      * - hostname string (char[] n bytes)
-     * - ip length (int 8 bytes)
+     * - ip length (int 4 bytes)
      * - ip string (char[] n bytes)
-     * - port (int 8 bytes)
+     * - port (int 4 bytes)
      */
     public void marshalHeader() throws IOException {
 
-        // Open DataInputStream for pushing data into byte array
-        ByteArrayInputStream byteInputStream = new ByteArrayInputStream(this.marshalledBytes);
-        DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+        // Open DataOutputStream for pushing data into byte array
+        ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+        DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
 
-        // TODO: Implement
+        // Write header fields to data output stream
+        dataOutStream.writeInt(integerFromType(this.type));
+        dataOutStream.writeInt(this.hostname.length());
+        dataOutStream.writeBytes(this.hostname);
+        dataOutStream.writeInt(this.ipAddress.length());
+        dataOutStream.writeBytes(this.ipAddress);
+        dataOutStream.writeInt(this.port);
+
+        // Flush DataOutputStream to the ByteArrayOutputStream, then collect bytes
+        dataOutStream.flush();
+        this.marshalledBytes = byteOutStream.toByteArray();
 
         // Close streams gracefully
-        dataInputStream.close();
-        byteInputStream.close();
+        dataOutStream.close();
+        byteOutStream.close();
     }
 
     /**
@@ -97,6 +104,19 @@ public class Message {
             case 0: return MessageType.HEARTBEAT_MINOR;
             case 1: return MessageType.HEARTBEAT_MAJOR;
             default: return null;
+        }
+    }
+
+    /**
+     * Converts a MessageType enum to an integer
+     * @param type MessageType enum
+     * @return integer type
+     */
+    public static Integer integerFromType(MessageType type) {
+        switch (type) {
+            case HEARTBEAT_MINOR: return 0;
+            case HEARTBEAT_MAJOR: return 1;
+            default: return -1;
         }
     }
 }
