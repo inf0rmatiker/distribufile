@@ -1,23 +1,48 @@
 package messaging;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 public class Message {
 
     public enum MessageType {
         HEARTBEAT_MINOR, HEARTBEAT_MAJOR
     }
 
-    public final MessageType type; // once set, this shouldn't change
+    public final MessageType type;
+    public final String hostname, ipAddress;
+    public final Integer port;
 
-    public Message() {
+    public Message() throws UnknownHostException {
         this(MessageType.HEARTBEAT_MINOR); // default to type 0
     }
 
-    public Message(MessageType type) {
+    public Message(MessageType type) throws UnknownHostException {
+        this(type, "", "", 0);
+    }
+
+    public Message(MessageType type, String hostname, String ipAddress, Integer port) {
         this.type = type;
+        this.hostname = hostname;
+        this.ipAddress = ipAddress;
+        this.port = port;
     }
 
     public MessageType getType() {
         return type;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public Integer getPort() {
+        return port;
     }
 
     /**
