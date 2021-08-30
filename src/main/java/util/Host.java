@@ -14,5 +14,14 @@ public class Host {
         return InetAddress.getLocalHost().getHostAddress();
     }
 
+    /**
+     * Retrieves the host's Hostname
+     * @return The Hostname of the host, as a String
+     * @throws UnknownHostException
+     */
+    public static String getHostname() throws UnknownHostException {
+        return InetAddress.getLocalHost().getHostName();
+    }
+
 
 }

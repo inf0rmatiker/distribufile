@@ -1,7 +1,6 @@
 package messaging;
 
-import java.io.IOException;
-import java.net.InetAddress;
+import util.Host;
 import java.net.UnknownHostException;
 
 public class Message {
@@ -14,12 +13,14 @@ public class Message {
     public final String hostname, ipAddress;
     public final Integer port;
 
+    // --- Constructors ---
+
     public Message() throws UnknownHostException {
         this(MessageType.HEARTBEAT_MINOR); // default to type 0
     }
 
     public Message(MessageType type) throws UnknownHostException {
-        this(type, "", "", 0);
+        this(type, Host.getHostname(), Host.getIpAddress(), 9001); // default to port 9001
     }
 
     public Message(MessageType type, String hostname, String ipAddress, Integer port) {
@@ -28,6 +29,8 @@ public class Message {
         this.ipAddress = ipAddress;
         this.port = port;
     }
+
+    // --- Getters ---
 
     public MessageType getType() {
         return type;
