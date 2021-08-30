@@ -1,6 +1,11 @@
 package messaging;
 
 import util.Host;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.net.UnknownHostException;
 
 public class Message {
@@ -9,9 +14,10 @@ public class Message {
         HEARTBEAT_MINOR, HEARTBEAT_MAJOR
     }
 
-    public final MessageType type;
-    public final String hostname, ipAddress;
-    public final Integer port;
+    public MessageType type;
+    public String hostname, ipAddress;
+    public Integer port;
+    public byte[] marshalledBytes;
 
     // --- Constructors ---
 
@@ -30,6 +36,10 @@ public class Message {
         this.port = port;
     }
 
+    public Message(byte[] marshalledBytes) {
+        this.marshalledBytes = marshalledBytes;
+    }
+
     // --- Getters ---
 
     public MessageType getType() {
@@ -46,6 +56,35 @@ public class Message {
 
     public Integer getPort() {
         return port;
+    }
+
+    public byte[] getMarshalledBytes() {
+        return marshalledBytes;
+    }
+
+    // --- Common message utility functions ---
+
+    /**
+     * Marshals/packs the object header fields into the message's byte array representation.
+     * The message header is represented as follows:
+     * - message type (int 8 bytes)
+     * - hostname length (int 8 bytes)
+     * - hostname string (char[] n bytes)
+     * - ip length (int 8 bytes)
+     * - ip string (char[] n bytes)
+     * - port (int 8 bytes)
+     */
+    public void marshalHeader() throws IOException {
+
+        // Open DataInputStream for pushing data into byte array
+        ByteArrayInputStream byteInputStream = new ByteArrayInputStream(this.marshalledBytes);
+        DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+        // TODO: Implement
+
+        // Close streams gracefully
+        dataInputStream.close();
+        byteInputStream.close();
     }
 
     /**
