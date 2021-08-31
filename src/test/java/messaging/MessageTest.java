@@ -95,7 +95,7 @@ public class MessageTest {
             dataOutStream.flush();
             byte[] testBytes = byteOutStream.toByteArray();
 
-            // Clean up
+            // Clean up output streams
             dataOutStream.close();
             byteOutStream.close();
 
@@ -108,15 +108,23 @@ public class MessageTest {
     }
 
     @Test
-    public void testMarshalHeaderByteLength() {
+    public void testMarshalByteLength() {
         String testHostname = "shark";
         String testIpAddr = "129.82.45.138";
         Message message = new Message(MessageType.HEARTBEAT_MAJOR, testHostname, testIpAddr, 9001);
         try {
-            message.marshalHeader();
-            assertNotNull(message.getMarshalledBytes());
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            message.marshal(dataOutStream);
+            message.collectByteStream(dataOutStream, byteOutStream);
+
+            // Clean up output streams
+            dataOutStream.close();
+            byteOutStream.close();
+
+            assertNotNull(message.getMarshaledBytes());
             int expectedHeaderByteLength = (4 * Integer.BYTES) + (testHostname.length() + testIpAddr.length());
-            int actualHeaderByteLength = message.getMarshalledBytes().length;
+            int actualHeaderByteLength = message.getMarshaledBytes().length;
             assertEquals(expectedHeaderByteLength, actualHeaderByteLength);
         } catch (IOException e) {
             fail("Caught IOException!");
@@ -135,6 +143,8 @@ public class MessageTest {
             dataOutStream.writeBytes(expected);
             dataOutStream.flush();
             byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up output streams
             dataOutStream.close();
             byteOutStream.close();
 
@@ -144,7 +154,7 @@ public class MessageTest {
 
             String actual = Message.readString(dataInputStream);
 
-            // Clean up
+            // Clean up input streams
             dataInputStream.close();
             byteInputStream.close();
 
@@ -162,10 +172,12 @@ public class MessageTest {
             // Build test byte array
             ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
             DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
-            dataOutStream.writeInt(expected.length());
+            dataOutStream.writeInt(0);
             dataOutStream.writeBytes(expected);
             dataOutStream.flush();
             byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up output streams
             dataOutStream.close();
             byteOutStream.close();
 
@@ -175,7 +187,7 @@ public class MessageTest {
 
             String actual = Message.readString(dataInputStream);
 
-            // Clean up
+            // Clean up input streams
             dataInputStream.close();
             byteInputStream.close();
 
@@ -186,7 +198,7 @@ public class MessageTest {
     }
 
     @Test
-    public void testUnmarshalHeader() {
+    public void testUnmarshal() {
         MessageType expectedType = MessageType.HEARTBEAT_MAJOR;
         String expectedHostname = "shark";
         String expectedIpAddr = "129.82.45.138";
@@ -204,19 +216,23 @@ public class MessageTest {
             dataOutStream.writeInt(expectedPort);
             dataOutStream.flush();
             byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up output streams
             dataOutStream.close();
             byteOutStream.close();
 
+            // Create a new Message from the test bytes
+            Message message = new Message(testBytes);
+
             // Init test input stream
-            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(testBytes);
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(message.getMarshaledBytes());
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
 
-            // Clean up
+            message.unmarshal(dataInputStream);
+
+            // Clean up input streams
             dataInputStream.close();
             byteInputStream.close();
-
-            Message message = new Message(testBytes);
-            message.unmarshalHeader();
 
             assertEquals(expectedType, message.getType());
             assertEquals(expectedHostname, message.getHostname());
@@ -236,10 +252,134 @@ public class MessageTest {
 
         Message a = new Message(testType, testHostname, testIpAddr, testPort);
         try {
-            a.marshalHeader();
-            Message b = new Message(a.getMarshalledBytes());
-            b.unmarshalHeader();
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            a.marshal(dataOutStream);
+            a.collectByteStream(dataOutStream, byteOutStream);
+
+            // Clean up output streams
+            dataOutStream.close();
+            byteOutStream.close();
+
+            // Create a new Message from a's marshaled bytes
+            Message b = new Message(a.getMarshaledBytes());
+
+            // Init test input stream
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(b.getMarshaledBytes());
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+            b.unmarshal(dataInputStream);
+
+            // Clean up input streams
+            dataInputStream.close();
+            byteInputStream.close();
+
             assertEquals(a, b);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testWriteStringArrayByteLength() {
+        String[] testStrings = new String[]{
+                "random string one",
+                "random string two",
+                "random string three"
+        };
+
+        try {
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+
+            Message.writeStringArray(dataOutStream, testStrings);
+
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up output streams
+            dataOutStream.close();
+            byteOutStream.close();
+
+            int expected = Integer.BYTES; // for array length
+            for (String testString: testStrings) {
+                expected += Integer.BYTES + testString.length();
+            }
+
+            int actual = testBytes.length;
+            assertEquals(expected, actual);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testReadStringArrayNonempty() {
+        String[] expecteds = new String[]{
+                "random string one",
+                "random string two",
+                "random string three"
+        };
+
+        try {
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            dataOutStream.writeInt(expecteds.length);
+            for (String expected: expecteds) {
+                dataOutStream.writeInt(expected.length());
+                dataOutStream.writeBytes(expected);
+            }
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up output streams
+            dataOutStream.close();
+            byteOutStream.close();
+
+            // Init test input stream
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(testBytes);
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+            String[] actuals = Message.readStringArray(dataInputStream);
+
+            // Clean up input streams
+            dataInputStream.close();
+            byteInputStream.close();
+
+            assertArrayEquals(expecteds, actuals);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testReadStringArrayEmpty() {
+        String[] expecteds = new String[]{};
+
+        try {
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            dataOutStream.writeInt(expecteds.length);
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up output streams
+            dataOutStream.close();
+            byteOutStream.close();
+
+            // Init test input stream
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(testBytes);
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+            String[] actuals = Message.readStringArray(dataInputStream);
+
+            // Clean up input streams
+            dataInputStream.close();
+            byteInputStream.close();
+
+            assertArrayEquals(expecteds, actuals);
         } catch (IOException e) {
             fail("Caught IOException!");
         }

@@ -14,7 +14,7 @@ public class Message {
     public MessageType type;
     public String hostname, ipAddress;
     public Integer port;
-    public byte[] marshalledBytes;
+    public byte[] marshaledBytes;
 
     // --- Constructors ---
 
@@ -33,8 +33,8 @@ public class Message {
         this.port = port;
     }
 
-    public Message(byte[] marshalledBytes) {
-        this.marshalledBytes = marshalledBytes;
+    public Message(byte[] marshaledBytes) {
+        this.marshaledBytes = marshaledBytes;
     }
 
     // --- Getters ---
@@ -55,8 +55,8 @@ public class Message {
         return port;
     }
 
-    public byte[] getMarshalledBytes() {
-        return marshalledBytes;
+    public byte[] getMarshaledBytes() {
+        return marshaledBytes;
     }
 
     // --- Common message utility functions ---
@@ -75,6 +75,7 @@ public class Message {
 
     /**
      * Marshals/packs the object header fields into the message's byte array representation.
+     * This is a partial implementation of the full marshaling process; subclasses are expected to complete this.
      * The message header is represented as follows:
      * - message type (int 4 bytes)
      * - hostname length (int 4 bytes)
@@ -82,26 +83,13 @@ public class Message {
      * - ip length (int 4 bytes)
      * - ip string (char[] n bytes)
      * - port (int 4 bytes)
+     * @param dataOutputStream The DataOutputStream we are writing to.
      */
-    public void marshalHeader() throws IOException {
-
-        // Open DataOutputStream for pushing data into byte array
-        ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
-        DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
-
-        // Write header fields to data output stream
-        dataOutStream.writeInt(integerFromType(this.type));
-        writeString(dataOutStream, this.hostname);
-        writeString(dataOutStream, this.ipAddress);
-        dataOutStream.writeInt(this.port);
-
-        // Flush DataOutputStream to the ByteArrayOutputStream, then collect bytes
-        dataOutStream.flush();
-        this.marshalledBytes = byteOutStream.toByteArray();
-
-        // Close streams gracefully
-        dataOutStream.close();
-        byteOutStream.close();
+    public void marshal(DataOutputStream dataOutputStream) throws IOException {
+        dataOutputStream.writeInt(integerFromType(this.type));
+        writeString(dataOutputStream, this.hostname);
+        writeString(dataOutputStream, this.ipAddress);
+        dataOutputStream.writeInt(this.port);
     }
 
     /**
@@ -115,21 +103,24 @@ public class Message {
      * - port (int 4 bytes)
      * @throws IOException
      */
-    public void unmarshalHeader() throws IOException {
-
-        // Open DataInputStream for reading data from a byte array
-        ByteArrayInputStream byteInputStream = new ByteArrayInputStream(this.marshalledBytes);
-        DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
-
-        // Read header fields
+    public void unmarshal(DataInputStream dataInputStream) throws IOException {
         this.type = typeFromInteger(dataInputStream.readInt());
         this.hostname = readString(dataInputStream);
         this.ipAddress = readString(dataInputStream);
         this.port = dataInputStream.readInt();
+    }
 
-        // Close streams gracefully
-        dataInputStream.close();
-        byteInputStream.close();
+    /**
+     * Completes the marshaling process by flushing the DataOutputStream to the ByteArrayOutputStream, then
+     * collecting as a byte array into the object's marshalledBytes field. Lastly, the streams are closed.
+     * @param dataOutStream The DataOutputStream we have been writing to.
+     * @param byteOutStream The ByteArrayOutputStream we have been flushing bytes to.
+     * @throws IOException
+     */
+    public void collectByteStream(DataOutputStream dataOutStream, ByteArrayOutputStream byteOutStream)
+            throws IOException {
+        dataOutStream.flush();
+        this.marshaledBytes = byteOutStream.toByteArray();
     }
 
     // --- Static helper functions ---
@@ -160,6 +151,38 @@ public class Message {
     public static void writeString(DataOutputStream dataOutputStream, String value) throws IOException {
         dataOutputStream.writeInt(value.length());
         dataOutputStream.writeBytes(value);
+    }
+
+    /**
+     * Reads a string array from the DataInputStream passed in as follows:
+     * 1. Reads the array length as an integer n.
+     * 2. Allocates a string array of size n.
+     * 3. Iterates n times, reading a string each time into the string array.
+     * @param dataInputStream The DataInputStream containing the bytes we are reading.
+     * @throws IOException
+     */
+    public static String[] readStringArray(DataInputStream dataInputStream) throws IOException {
+        int count = dataInputStream.readInt();
+        String[] array = new String[count];
+        for (int i = 0; i < count; i++) {
+            array[i] = readString(dataInputStream);
+        }
+        return array;
+    }
+
+    /**
+     * Writes a string array to the DataOutputString passed in as follows:
+     * 1. Writes the string array length (n) as an integer.
+     * 2. Iterates n times, writing a string from the array to the stream each time.
+     * @param dataOutputStream DataOutputStream containing the byte array we are writing to
+     * @param values The String values we are writing to the byte array
+     * @throws IOException
+     */
+    public static void writeStringArray(DataOutputStream dataOutputStream, String[] values) throws IOException {
+        dataOutputStream.writeInt(values.length);
+        for (String value: values) {
+            writeString(dataOutputStream, value);
+        }
     }
 
     /**
