@@ -13,7 +13,9 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
+/**
+ * Tests the concrete implementation of the HeartbeatMinor class.
+ */
 public class HeartbeatMinorTest {
 
     @Test
@@ -117,5 +119,22 @@ public class HeartbeatMinorTest {
         } catch (IOException e) {
             fail("Caught IOException!");
         }
+    }
+
+    @Test
+    public void testGetType() {
+        String testHostname = "shark";
+        String testIpAddr = "129.82.45.138";
+        int testPort = 9001;
+        int testTotalChunksMaintained = 0;
+        long testFreeSpaceAvailable = 0L;
+        String[] testNewlyAddedChunks = new String[]{"test chunk 1", "test chunk 5"};
+        String[] testCorruptedFiles = new String[]{"test file 3", "test file 7"};
+        Message message = new HeartbeatMinor(testHostname, testIpAddr, testPort, testTotalChunksMaintained,
+                testFreeSpaceAvailable, testNewlyAddedChunks, testCorruptedFiles);
+
+        MessageType expected = MessageType.HEARTBEAT_MINOR;
+        MessageType actual = message.getType();
+        assertEquals(expected, actual);
     }
 }

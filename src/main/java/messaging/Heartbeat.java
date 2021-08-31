@@ -1,33 +1,13 @@
 package messaging;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.UnknownHostException;
 
-public class Heartbeat extends Message {
+public abstract class Heartbeat extends Message {
 
     public Integer totalChunksMaintained;
     public Long freeSpaceAvailable;
-
-    public Heartbeat(MessageType type, Integer totalChunksMaintained, Long freeSpaceAvailable) throws UnknownHostException {
-        super(type);
-        this.totalChunksMaintained = totalChunksMaintained;
-        this.freeSpaceAvailable = freeSpaceAvailable;
-    }
-
-    public Heartbeat(MessageType type, String hostname, String ipAddress, Integer port, Integer totalChunksMaintained,
-                     Long freeSpaceAvailable) {
-        super(type, hostname, ipAddress, port);
-        this.totalChunksMaintained = totalChunksMaintained;
-        this.freeSpaceAvailable = freeSpaceAvailable;
-    }
-
-    public Heartbeat(byte[] marshaledBytes) {
-        super(marshaledBytes);
-    }
 
     public Integer getTotalChunksMaintained() {
         return totalChunksMaintained;

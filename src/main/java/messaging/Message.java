@@ -5,43 +5,19 @@ import util.Host;
 import java.io.*;
 import java.net.UnknownHostException;
 
-public class Message {
+public abstract class Message {
 
     public enum MessageType {
         HEARTBEAT_MINOR, HEARTBEAT_MAJOR
     }
 
-    public MessageType type;
     public String hostname, ipAddress;
     public Integer port;
     public byte[] marshaledBytes;
 
-    // --- Constructors ---
-
-    public Message() throws UnknownHostException {
-        this(MessageType.HEARTBEAT_MINOR); // default to type 0
-    }
-
-    public Message(MessageType type) throws UnknownHostException {
-        this(type, Host.getHostname(), Host.getIpAddress(), 9001); // default to port 9001
-    }
-
-    public Message(MessageType type, String hostname, String ipAddress, Integer port) {
-        this.type = type;
-        this.hostname = hostname;
-        this.ipAddress = ipAddress;
-        this.port = port;
-    }
-
-    public Message(byte[] marshaledBytes) {
-        this.marshaledBytes = marshaledBytes;
-    }
-
     // --- Getters ---
 
-    public MessageType getType() {
-        return type;
-    }
+    public abstract MessageType getType();
 
     public String getHostname() {
         return hostname;
@@ -86,7 +62,7 @@ public class Message {
      * @param dataOutputStream The DataOutputStream we are writing to.
      */
     public void marshal(DataOutputStream dataOutputStream) throws IOException {
-        dataOutputStream.writeInt(integerFromType(this.type));
+        dataOutputStream.writeInt(integerFromType(this.getType()));
         writeString(dataOutputStream, this.hostname);
         writeString(dataOutputStream, this.ipAddress);
         dataOutputStream.writeInt(this.port);
@@ -104,7 +80,7 @@ public class Message {
      * @throws IOException
      */
     public void unmarshal(DataInputStream dataInputStream) throws IOException {
-        this.type = typeFromInteger(dataInputStream.readInt());
+        dataInputStream.readInt(); // skip over Message type integer
         this.hostname = readString(dataInputStream);
         this.ipAddress = readString(dataInputStream);
         this.port = dataInputStream.readInt();
