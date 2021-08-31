@@ -12,4 +12,8 @@ public class HeartbeatMajor extends Heartbeat {
                           Long freeSpaceAvailable) {
         super(MessageType.HEARTBEAT_MAJOR, hostname, ipAddress, port, totalChunksMaintained, freeSpaceAvailable);
     }
+
+    public HeartbeatMajor(byte[] marshaledBytes) {
+        super(marshaledBytes);
+    }
 }
