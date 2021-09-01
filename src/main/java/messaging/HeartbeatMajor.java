@@ -6,10 +6,6 @@ import java.net.UnknownHostException;
 
 public class HeartbeatMajor extends Heartbeat {
 
-    public HeartbeatMajor(Integer totalChunksMaintained, Long freeSpaceAvailable) throws UnknownHostException {
-        this(Host.getHostname(), Host.getIpAddress(), 9001, totalChunksMaintained, freeSpaceAvailable);
-    }
-
     public HeartbeatMajor(String hostname, String ipAddress, Integer port, Integer totalChunksMaintained,
                           Long freeSpaceAvailable) {
         this.hostname = hostname;
@@ -19,12 +15,12 @@ public class HeartbeatMajor extends Heartbeat {
         this.freeSpaceAvailable = freeSpaceAvailable;
     }
 
+    public HeartbeatMajor(byte[] marshaledBytes) {
+        this.marshaledBytes = marshaledBytes;
+    }
+
     @Override
     public MessageType getType() {
         return MessageType.HEARTBEAT_MAJOR;
-    }
-
-    public HeartbeatMajor(byte[] marshaledBytes) {
-        super(marshaledBytes);
     }
 }
