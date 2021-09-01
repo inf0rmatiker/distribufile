@@ -23,4 +23,8 @@ public class HeartbeatMajor extends Heartbeat {
     public MessageType getType() {
         return MessageType.HEARTBEAT_MAJOR;
     }
+
+    public HeartbeatMajor(byte[] marshaledBytes) {
+        super(marshaledBytes);
+    }
 }
