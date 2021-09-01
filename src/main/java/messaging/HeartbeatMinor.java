@@ -1,5 +1,7 @@
 package messaging;
 
+import util.Host;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -12,20 +14,28 @@ public class HeartbeatMinor extends Heartbeat {
 
     public HeartbeatMinor(Integer totalChunksMaintained, Long freeSpaceAvailable, String[] newlyAddedChunks,
                           String[] corruptedFiles) throws UnknownHostException {
-        super(MessageType.HEARTBEAT_MINOR, totalChunksMaintained, freeSpaceAvailable);
-        this.newlyAddedChunks = newlyAddedChunks;
-        this.corruptedFiles = corruptedFiles;
+        this(Host.getHostname(), Host.getIpAddress(), 9001, totalChunksMaintained, freeSpaceAvailable,
+                newlyAddedChunks, corruptedFiles);
     }
 
     public HeartbeatMinor(String hostname, String ipAddress, Integer port, Integer totalChunksMaintained,
                           Long freeSpaceAvailable, String[] newlyAddedChunks, String[] corruptedFiles) {
-        super(MessageType.HEARTBEAT_MINOR, hostname, ipAddress, port, totalChunksMaintained, freeSpaceAvailable);
+        this.hostname = hostname;
+        this.ipAddress = ipAddress;
+        this.port = port;
+        this.totalChunksMaintained = totalChunksMaintained;
+        this.freeSpaceAvailable = freeSpaceAvailable;
         this.newlyAddedChunks = newlyAddedChunks;
         this.corruptedFiles = corruptedFiles;
     }
 
     public HeartbeatMinor(byte[] marshaledBytes) {
-        super(marshaledBytes);
+        this.marshaledBytes = marshaledBytes;
+    }
+
+    @Override
+    public MessageType getType() {
+        return MessageType.HEARTBEAT_MINOR;
     }
 
     public String[] getNewlyAddedChunks() {
