@@ -1,11 +1,15 @@
 package messaging;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.Host;
 
 import java.io.*;
 import java.net.UnknownHostException;
 
 public abstract class Message {
+
+    Logger log = LoggerFactory.getLogger(Message.class);
 
     public enum MessageType {
         HEARTBEAT_MINOR, HEARTBEAT_MAJOR

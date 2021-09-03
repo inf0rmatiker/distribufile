@@ -1,10 +1,17 @@
 package messaging;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
 public abstract class Heartbeat extends Message {
+
+    Logger log = LoggerFactory.getLogger(Heartbeat.class);
 
     public Integer totalChunksMaintained;
     public Long freeSpaceAvailable;

@@ -1,10 +1,13 @@
 package messaging;
 
-import util.Host;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.UnknownHostException;
 
 public class HeartbeatMajor extends Heartbeat {
+
+    Logger log = LoggerFactory.getLogger(HeartbeatMajor.class);
 
     public HeartbeatMajor(String hostname, String ipAddress, Integer port, Integer totalChunksMaintained,
                           Long freeSpaceAvailable) {

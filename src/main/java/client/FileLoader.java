@@ -1,5 +1,8 @@
 package client;
 
+import messaging.HeartbeatMajor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.Constants;
 
 import java.io.BufferedInputStream;
@@ -12,6 +15,8 @@ import java.io.IOException;
  * The final chunk may be less than the specified chunk size, due to internal fragmentation.
  */
 public class FileLoader {
+
+    Logger log = LoggerFactory.getLogger(FileLoader.class);
 
     public String absolutePath;
     private final BufferedInputStream reader;
@@ -39,7 +44,7 @@ public class FileLoader {
         int bytesRead = this.reader.read(chunk, 0, Constants.CHUNK_SIZE);
 
         if (bytesRead == -1) {
-            System.out.println("Finished reading");
+            log.info("Finished reading final chunk of file \"{}\"", this.absolutePath);
             return null;
         } else if (bytesRead < Constants.CHUNK_SIZE) {
             byte[] resizedChunk = new byte[bytesRead];
@@ -47,7 +52,7 @@ public class FileLoader {
             chunk = resizedChunk;
         }
 
-        System.out.printf("Read chunk of size %d bytes\n", chunk.length);
+        log.info("Read chunk of size {} bytes\n", chunk.length);
         return chunk;
     }
 
