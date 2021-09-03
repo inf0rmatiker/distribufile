@@ -12,12 +12,6 @@ public class HeartbeatMinor extends Heartbeat {
 
     public String[] newlyAddedChunks, corruptedFiles;
 
-    public HeartbeatMinor(Integer totalChunksMaintained, Long freeSpaceAvailable, String[] newlyAddedChunks,
-                          String[] corruptedFiles) throws UnknownHostException {
-        this(Host.getHostname(), Host.getIpAddress(), 9001, totalChunksMaintained, freeSpaceAvailable,
-                newlyAddedChunks, corruptedFiles);
-    }
-
     public HeartbeatMinor(String hostname, String ipAddress, Integer port, Integer totalChunksMaintained,
                           Long freeSpaceAvailable, String[] newlyAddedChunks, String[] corruptedFiles) {
         this.hostname = hostname;
