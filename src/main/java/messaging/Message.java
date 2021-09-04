@@ -1,11 +1,15 @@
 package messaging;
 
+import chunkserver.ChunkMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.Host;
 
 import java.io.*;
 import java.net.UnknownHostException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Message {
 
@@ -162,6 +166,75 @@ public abstract class Message {
         dataOutputStream.writeInt(values.length);
         for (String value: values) {
             writeString(dataOutputStream, value);
+        }
+    }
+
+    /**
+     * Reads a ChunkMetadata object from the DataInputStream as follows:
+     * 1. Reads the string absolute filepath
+     * 2. Reads the version number as an int
+     * 3. Reads the sequence number as an int
+     * 4. Reads the timestamp as a long, converts to Timestamp object
+     * @param dataInputStream DataInputStream containing ChunkMetadata we are reading
+     * @return A ChunkMetadata instance created from the above fields
+     * @throws IOException
+     */
+    public static ChunkMetadata readChunkMetadata(DataInputStream dataInputStream) throws IOException {
+        String absoluteFilePath = readString(dataInputStream);
+        int version = dataInputStream.readInt();
+        int sequence = dataInputStream.readInt();
+        long tsMillis = dataInputStream.readLong(); // read timestamp as long milliseconds since January 1, 1970, GMT
+        Timestamp timestamp = new Timestamp(tsMillis);
+        return new ChunkMetadata(absoluteFilePath, version, sequence, timestamp);
+    }
+
+    /**
+     * Writes a ChunkMetadata object to the DataOutputStream as follows:
+     * 1. Writes the file's absolute path as a string
+     * 2. Writes the chunk's version as an int
+     * 3. Writes the chunk's sequence number as an int
+     * 4. Writes the chunk's timestamp as a long
+     * @param dataOutputStream DataOutputStream we are writing the ChunkMetadata object to
+     * @param metadata ChunkMetadata instance
+     * @throws IOException
+     */
+    public static void writeChunkMetadata(DataOutputStream dataOutputStream, ChunkMetadata metadata) throws IOException {
+        writeString(dataOutputStream, metadata.getAbsoluteFilePath());
+        dataOutputStream.writeInt(metadata.getVersion());
+        dataOutputStream.writeInt(metadata.getSequence());
+        long tsMillis = metadata.getTimestamp().getTime(); // get timestamp as milliseconds since January 1, 1970, GMT
+        dataOutputStream.writeLong(tsMillis);
+    }
+
+    /**
+     * Reads a List of ChunkMetadata objects from the DataInputStream as follows:
+     * 1. Reads the List length as an integer n.
+     * 2. Iterates n times, reading a ChunkMetadata instance each time into the List.
+     * @param dataInputStream DataInputStream containing ChunkMetadata List we are reading
+     * @return A List of ChunkMetadata instances created from the above fields
+     * @throws IOException
+     */
+    public static List<ChunkMetadata> readChunkMetadataList(DataInputStream dataInputStream) throws IOException {
+        int count = dataInputStream.readInt();
+        List<ChunkMetadata> chunksMetadata = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            chunksMetadata.add(readChunkMetadata(dataInputStream));
+        }
+        return chunksMetadata;
+    }
+
+    /**
+     * Writes a List of ChunkMetadata objects to the DataOutputStream as follows:
+     * 1. Writes the number of ChunkMetadata objects in the List (n)
+     * 2. Iterates n times, writing a ChunkMetadata object from the List to the stream each time.
+     * @param dataOutputStream DataOutputStream we are writing the ChunkMetadata objects to
+     * @param metadata List of ChunkMetadata instances
+     * @throws IOException
+     */
+    public static void writeChunkMetadataList(DataOutputStream dataOutputStream, List<ChunkMetadata> metadata) throws IOException {
+        dataOutputStream.writeInt(metadata.size());
+        for (ChunkMetadata chunkMetadata: metadata) {
+            writeChunkMetadata(dataOutputStream, chunkMetadata);
         }
     }
 

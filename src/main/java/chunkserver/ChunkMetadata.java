@@ -40,5 +40,16 @@ public class ChunkMetadata {
         return sliceChecksums;
     }
 
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) return false;
+        if (other == this) return true;
+        if (!(other instanceof ChunkMetadata)) return false;
+        ChunkMetadata cmOther = (ChunkMetadata) other;
+        return (this.absoluteFilePath.equals(cmOther.getAbsoluteFilePath()) &&
+                this.version.equals(cmOther.getVersion()) &&
+                this.sequence.equals(cmOther.getSequence()) &&
+                this.timestamp.getTime() == cmOther.getTimestamp().getTime());
+    }
 
 }

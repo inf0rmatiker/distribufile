@@ -1,10 +1,15 @@
 package messaging;
 
+import chunkserver.ChunkMetadata;
 import org.junit.jupiter.api.Test;
 import messaging.Message.MessageType;
 
 import java.io.*;
 import java.net.UnknownHostException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -234,6 +239,76 @@ public class MessageTest {
             byteInputStream.close();
 
             assertArrayEquals(expecteds, actuals);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testWriteAndReadChunkMetadata() {
+        Instant now = Instant.now();
+        Timestamp tsNow = Timestamp.from(now);
+        ChunkMetadata expected = new ChunkMetadata("/test_filepath", 0, 0, tsNow);
+
+        try {
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            Message.writeChunkMetadata(dataOutStream, expected);
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up output streams
+            dataOutStream.close();
+            byteOutStream.close();
+
+            // Init test input stream
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(testBytes);
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+            ChunkMetadata actual = Message.readChunkMetadata(dataInputStream);
+
+            // Clean up input streams
+            dataInputStream.close();
+            byteInputStream.close();
+
+            assertEquals(expected, actual);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testWriteAndReadChunkMetadataList() {
+        List<ChunkMetadata> expecteds = new ArrayList<>();
+        Instant now = Instant.now();
+        Timestamp tsNow = Timestamp.from(now);
+        expecteds.add(new ChunkMetadata("/test_1_filepath", 1, 7, tsNow));
+        expecteds.add(new ChunkMetadata("/test_2_filepath", 1, 4, tsNow));
+
+        try {
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            Message.writeChunkMetadataList(dataOutStream, expecteds);
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up output streams
+            dataOutStream.close();
+            byteOutStream.close();
+
+            // Init test input stream
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(testBytes);
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+            List<ChunkMetadata> actuals = Message.readChunkMetadataList(dataInputStream);
+
+            // Clean up input streams
+            dataInputStream.close();
+            byteInputStream.close();
+
+            assertEquals(expecteds, actuals);
         } catch (IOException e) {
             fail("Caught IOException!");
         }
