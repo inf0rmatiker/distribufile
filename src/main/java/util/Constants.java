@@ -18,4 +18,5 @@ public class Constants {
     public static final int CONTROLLER_PORT = 9001;
     public static final int CHUNK_SERVER_PORT = 9000;
     public static final int CHUNK_SIZE = 64 * KB;
+    public static final int SLICE_SIZE = 8 * KB;
 }
