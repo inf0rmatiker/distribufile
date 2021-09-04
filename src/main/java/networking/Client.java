@@ -2,14 +2,23 @@ package networking;
 
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
+import util.CLI;
 
-public class Client {
+public class Client implements Runnable {
+
+    private static class ClientException extends Exception {
+        public ClientException(String message) {
+            super(message);
+        }
+    }
 
     public static Integer DEFAULT_SERVER_PORT = 9001;
     public static String DEFAULT_SERVER_HOST = "localhost";
 
-    private Socket socket = null;
+    private String host;
+    private int port;
+    private Socket socket;
+    // Probably dont need
     private DataInputStream dataInputStream = null;
     private DataOutputStream dataOutputStream = null;
 
@@ -23,134 +32,171 @@ public class Client {
         this(host, DEFAULT_SERVER_PORT);
     }
 
-    public Client(String host, int port) {
-        try {
-            socket = new Socket(host, DEFAULT_SERVER_PORT);
-
-            dataInputStream = new DataInputStream(socket.getInputStream());
-            dataOutputStream = new DataOutputStream(socket.getOutputStream());
-
-        } catch (UnknownHostException e) {
-            System.out.println("Unknown Host Error: " + e.getMessage());
-        } catch (IOException e) {
-            System.out.println("IO Exception Error: " + e.getMessage());
-        }
+    public Client(String host, Integer port) {
+            this.host = host;
+            this.port = port;
+            connectToServer(host, String.valueOf(port));
     }
 
-    // --- Public start method ---
+    // --- Getters ---
 
-    public void start() {
-        initialConnection();
-        while (!socket.isClosed()) {
-            acceptUserInput();
+    public String getHost() {
+        return host;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+
+    // --- Public start method ---
+    /**
+     * Starts the client and connects to the server. A while loop continues to
+     * accept input from the user and send it to the server.
+     * 
+     * @Override
+     */
+    public void run() {
+        while (socket != null && !socket.isClosed()) {
+            try {
+                acceptUserInput();
+            } catch (ClientException e) {
+                System.out.println(e.getMessage());
+                break;
+            }
         }
+
     }
 
     // --- Private client functionality methods ---
 
     /**
-     * Initial connection to the server. The user can specify the host.
-     */
-    private void initialConnection() {
-        System.out.println("Enter what host you want to connect to.");
-        Scanner scanner = new Scanner(System.in);
-        String input = scanner.nextLine();
-        connectToServer(input);
-    }
-
-    /**
      * Accepts user input to be filtered provide more functionality to the client.
+     * 
+     * @throws ClientException throws an exception if the user is exiting the client
      */
-    private void acceptUserInput() {
-        Scanner scanner = new Scanner(System.in);  
+    private void acceptUserInput() throws ClientException {
+        BufferedReader stdIn =
+                new BufferedReader(new InputStreamReader(System.in));
 
         System.out.print("Enter a command: ");
-        String input = scanner.nextLine();
+        try {
+            filterInput(stdIn.readLine());
+        } catch (IOException e) {
+            System.out.println("Failed to read System.in: " + e.getMessage());
+        }
 
-        filterInput(input);
+
     }
 
     /**
-     * Filters the users input to determine what to do with it. 
+     * Filters the users input to determine what to do with it.
+     * 
      * @param input The users input.
+     * @throws ClientException Throws ClientException when the client is exiting the program
      */
-    private void filterInput(String input) {
+    private void filterInput(String input) throws ClientException {
         if (input.equals("exit")) {
             System.out.println("Exiting...");
             closeConnection();
-        } else if (input.equals("help")) {
-            displayCommands();
         } else if (input.startsWith("send")) {
-            String message = input.substring(input.indexOf("send") + 1);
+            String message = input.substring(input.indexOf(" ") + 1);
             sendMessage(message);
-        } else if(input.contains("server_connect")){
-            connectToServer(input);
+        } else if (input.contains("server_connect")) {
+            String[] args = input.substring(input.indexOf(" ") + 1).split(" ");
+            String[] parsedInput = CLI.getHostAndPort(args);
+            connectToServer(parsedInput[0], parsedInput[1]);
         } else {
-            System.out.println("Invalid command: " + input);
+            System.out.println("Invalid Command.");
+            displayCommands();
         }
     }
 
     /**
-     * Close the Client objects connection to the server. This includes closing the socket and the data streams. 
-     * As well as the socket itself.
-     * @IOException If the socket is already closed.
+     * Close the Client objects connection to the server. This includes closing the
+     * socket and the data streams. As well as the socket itself.
+     * 
+     * @throws ClientException throws exception when closing the client
      */
-    private void closeConnection() {
+    private void closeConnection() throws ClientException {
         try {
-            dataInputStream.close();
-            dataOutputStream.close();
             socket.close();
-            System.out.println("Connection closed");
+            throw new ClientException("Connection closed.");
         } catch (IOException e) {
             System.out.println("Error closing connection: " + e.getMessage());
         }
     }
 
-    /** 
+    /**
      * Displays the commands that the client can use.
      */
     private void displayCommands() {
         System.out.println("\nAvailable commands: ");
-        System.out.println("server_connect <host port>: if zero or one argument given. \"localhost\" and port 9001 set by default.");
+        System.out.println(
+                "server_connect -h [host] -p [port]: if zero arguments are given or flags not given. \"localhost\" and port 9001 set by default.");
         System.out.println("send <message>: send message to server");
         System.out.println("exit: close client");
-        System.out.println("help");
     }
 
     /**
-     * Client utility method to send a message to the server. Mainly meant for testing purposes until message factory is implemented.
+     * Client utility method to send a message to the server. Mainly meant for
+     * testing purposes until message factory is implemented.
+     * 
      * @param message The message to be sent.
      */
     private void sendMessage(String message) {
         try {
             dataOutputStream.writeUTF(message);
+            dataOutputStream.flush();
         } catch (IOException e) {
-            System.out.println("Error sending message: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    /** 
-     * Client utility method to connect to a server of a users choice. If the user does not provide a host and port, or 
-     * if the user provides only one argument, the default host and port are used. The default host is localhost and the default port is 9001.
-     * @param input The users input. Contatining the host and port.
-    */
-    private void connectToServer(String input) {
-        String[] args = input.split(" ");
-        String host = args.length == 1 ? args[1] : DEFAULT_SERVER_HOST;
-        Integer port = args.length == 1 ? Integer.parseInt(args[2]) : DEFAULT_SERVER_PORT;
+    /**
+     * Client utility method to connect to a server of a users choice. If the user
+     * does not provide a host and port, or if the user provides only one argument,
+     * the default host and port are used. The default host is localhost and the
+     * default port is 9001.
+     * 
+     * @param host the host the user is connecting to
+     * @param port the port number the user will connect to
+     */
+    private void connectToServer(String host, String port){
         try {
-             this.socket = new Socket(host, port);
-             this.dataInputStream = new DataInputStream(socket.getInputStream());
-             this.dataOutputStream = new DataOutputStream(socket.getOutputStream());
-             System.out.println("Connected to server");
+
+            if(this.socket != null && !this.socket.isClosed()) {
+                closeConnection();
+            }
+
+            this.socket = new Socket(host, Integer.parseInt(port));
+            this.dataInputStream = new DataInputStream(socket.getInputStream());
+            this.dataOutputStream = new DataOutputStream(socket.getOutputStream());
+
+            System.out.println("🔌Connected to server");
+
         } catch (IOException e) {
             System.out.println("Error connecting to server: " + e.getMessage());
+        } catch (ClientException e) {
+            System.out.println();
         }
     }
 
     public static void main(String[] args) {
-        Client client = new Client();
-        client.start();
+
+        if(args.length != 4){
+            System.out.println(CLI.CLI_HELP);
+            System.exit(1);
+        }
+        else {
+            String[] parsedInput = CLI.getHostAndPort(args);
+            Client client = new Client(parsedInput[0], Integer.parseInt(parsedInput[1]));
+            client.run();
+        }
     }
 
 }
