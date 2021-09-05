@@ -56,24 +56,39 @@ public class ChunkStoreRequest extends Message {
     }
 
     /**
-     * In addition to the header, writes chunk metadata for each of
-     * the chunks the chunk server is managing.
+     * In addition to the header, writes a list of recipients and a chunk
+     * to replicate.
      * @param dataOutputStream The DataOutputStream we are writing to.
      * @throws IOException If fails to read to DataOutputStream
      */
     @Override
     public void marshal(DataOutputStream dataOutputStream) throws IOException {
         super.marshal(dataOutputStream); // first marshal common Message header
+        writeStringList(dataOutputStream, this.replicationChunkServers);
+        writeString(dataOutputStream, this.absoluteFilePath);
+        dataOutputStream.writeInt(this.sequence);
+
+        // Write chunk data
+        dataOutputStream.writeInt(this.chunkData.length);
+        dataOutputStream.write(this.chunkData);
     }
 
     /**
-     * In addition to the header, this unmarshals the list of
-     * chunk metadata objects that the chunk server is managing.
+     * In addition to the header, reads a list of recipients and a chunk
+     * to replicate.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream
      */
     @Override
     public void unmarshal(DataInputStream dataInputStream) throws IOException {
         super.unmarshal(dataInputStream); // first unmarshal common Message header
+        this.replicationChunkServers = readStringList(dataInputStream);
+        this.absoluteFilePath = readString(dataInputStream);
+        this.sequence = dataInputStream.readInt();
+
+        // Read chunk data
+        int chunkSize = dataInputStream.readInt();
+        this.chunkData = new byte[chunkSize];
+        dataInputStream.readFully(this.chunkData, 0, chunkSize);
     }
 }
