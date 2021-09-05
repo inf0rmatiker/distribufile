@@ -28,3 +28,7 @@ hs_err_pid*
 
 # Compiled target dir
 target/
+
+# VS Code 
+.settings/
+.vscode/
