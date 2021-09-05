@@ -170,6 +170,38 @@ public abstract class Message {
     }
 
     /**
+     * Reads a string List from the DataInputStream passed in as follows:
+     * 1. Reads the array length as an integer n.
+     * 2. Allocates a string array of size n.
+     * 3. Iterates n times, reading a string each time into the string List.
+     * @param dataInputStream The DataInputStream containing the bytes we are reading.
+     * @throws IOException If fails to read from DataInputStream
+     */
+    public static List<String> readStringList(DataInputStream dataInputStream) throws IOException {
+        int count = dataInputStream.readInt();
+        List<String> list = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            list.add(readString(dataInputStream));
+        }
+        return list;
+    }
+
+    /**
+     * Writes a string List to the DataOutputString passed in as follows:
+     * 1. Writes the string List length (n) as an integer.
+     * 2. Iterates n times, writing a string from the List to the stream each time.
+     * @param dataOutputStream DataOutputStream containing the byte array we are writing to
+     * @param values The String values we are writing to the byte array
+     * @throws IOException If fails to write to DataOutputStream
+     */
+    public static void writeStringList(DataOutputStream dataOutputStream, List<String> values) throws IOException {
+        dataOutputStream.writeInt(values.size());
+        for (String value: values) {
+            writeString(dataOutputStream, value);
+        }
+    }
+
+    /**
      * Reads a ChunkMetadata object from the DataInputStream as follows:
      * 1. Reads the string absolute filepath
      * 2. Reads the version number as an int
