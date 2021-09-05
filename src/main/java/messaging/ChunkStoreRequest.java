@@ -3,8 +3,13 @@ package messaging;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
+/**
+ * A Message concrete class which allows the Client to send a chunk to a Chunk Server, along with the list of
+ * additional Chunk Servers to replicate/forward the chunk to.
+ */
 public class ChunkStoreRequest extends Message {
 
     // A list of chunk server hostnames to forward this message to for chunk replication
@@ -56,6 +61,14 @@ public class ChunkStoreRequest extends Message {
     }
 
     /**
+     * Removes and returns the last chunk server host in the list of replication recipients.
+     * @return The host name of a chunk server which was just removed from the end of the list.
+     */
+    public String popReplicationRecipient() {
+        return this.replicationChunkServers.remove(this.replicationChunkServers.size() - 1);
+    }
+
+    /**
      * In addition to the header, writes a list of recipients and a chunk
      * to replicate.
      * @param dataOutputStream The DataOutputStream we are writing to.
@@ -90,5 +103,18 @@ public class ChunkStoreRequest extends Message {
         int chunkSize = dataInputStream.readInt();
         this.chunkData = new byte[chunkSize];
         dataInputStream.readFully(this.chunkData, 0, chunkSize);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) return false;
+        if (other == this) return true;
+        if (!(other instanceof ChunkStoreRequest)) return false;
+        ChunkStoreRequest csrOther = (ChunkStoreRequest) other;
+        return (this.replicationChunkServers.equals(csrOther.getReplicationChunkServers()) &&
+                this.absoluteFilePath.equals(csrOther.getAbsoluteFilePath()) &&
+                this.sequence.equals(csrOther.getSequence()) &&
+                Arrays.equals(this.chunkData, csrOther.getChunkData())
+        );
     }
 }
