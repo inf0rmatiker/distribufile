@@ -45,6 +45,7 @@ public class ChunkIntegrity {
     }
 
     /**
+<<<<<<< HEAD
      * Calculates the SHA-1 checksums for each of the slices in the chunk, and adds them to the in-memory
      * sliceChecksums List.
      * @param chunk The raw bytes of the entire chunk
@@ -87,6 +88,8 @@ public class ChunkIntegrity {
     }
 
     /**
+=======
+>>>>>>> DF-29
      * Calculates the SHA-1 hash text of a slice byte array.
      * Code structure taken from https://www.geeksforgeeks.org/sha-1-hash-in-java/ with modifications
      * made to string building efficiency.
