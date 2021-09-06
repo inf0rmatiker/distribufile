@@ -40,12 +40,12 @@ public class ChunkIntegrity {
         this.sliceChecksums = calculateSliceChecksums(chunk);
     }
 
+
     public List<String> getSliceChecksums() {
         return sliceChecksums;
     }
 
     /**
-<<<<<<< HEAD
      * Calculates the SHA-1 checksums for each of the slices in the chunk, and adds them to the in-memory
      * sliceChecksums List.
      * @param chunk The raw bytes of the entire chunk
@@ -88,6 +88,9 @@ public class ChunkIntegrity {
     }
 
     /**
+<<<<<<< HEAD
+=======
+>>>>>>> DF-29
 =======
 >>>>>>> DF-29
      * Calculates the SHA-1 hash text of a slice byte array.
