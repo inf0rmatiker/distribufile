@@ -18,15 +18,11 @@ public class ChunkMetadata {
     // The timestamp the chunk was last updated
     public Timestamp timestamp;
 
-    // A list of SHA-1 checksums, one for each slice of the chunk
-    public List<String> sliceChecksums;
-
     public ChunkMetadata(String absoluteFilePath, Integer version, Integer sequence, Timestamp timestamp) {
         this.absoluteFilePath = absoluteFilePath;
         this.version = version;
         this.sequence = sequence;
         this.timestamp = timestamp;
-        this.sliceChecksums = new ArrayList<>();
     }
 
     public String getAbsoluteFilePath() {
@@ -43,10 +39,6 @@ public class ChunkMetadata {
 
     public Timestamp getTimestamp() {
         return timestamp;
-    }
-
-    public List<String> getSliceChecksums() {
-        return sliceChecksums;
     }
 
     @Override
