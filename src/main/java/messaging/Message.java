@@ -16,7 +16,7 @@ public abstract class Message {
     Logger log = LoggerFactory.getLogger(Message.class);
 
     public enum MessageType {
-        HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST
+        HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST, CLIENT_WRITE_REQUEST
     }
 
     public String hostname, ipAddress;
@@ -280,6 +280,7 @@ public abstract class Message {
             case 0: return MessageType.HEARTBEAT_MINOR;
             case 1: return MessageType.HEARTBEAT_MAJOR;
             case 2: return MessageType.CHUNK_STORE_REQUEST;
+            case 3: return MessageType.CLIENT_WRITE_REQUEST;
             default: return null;
         }
     }
@@ -294,6 +295,7 @@ public abstract class Message {
             case HEARTBEAT_MINOR: return 0;
             case HEARTBEAT_MAJOR: return 1;
             case CHUNK_STORE_REQUEST: return 2;
+            case CLIENT_WRITE_REQUEST: return 3;
             default: return -1;
         }
     }
