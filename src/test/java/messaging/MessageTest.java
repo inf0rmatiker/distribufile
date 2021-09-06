@@ -9,6 +9,7 @@ import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -303,6 +304,38 @@ public class MessageTest {
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
 
             List<ChunkMetadata> actuals = Message.readChunkMetadataList(dataInputStream);
+
+            // Clean up input streams
+            dataInputStream.close();
+            byteInputStream.close();
+
+            assertEquals(expecteds, actuals);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testWriteAndReadStringList() {
+        List<String> expecteds = new ArrayList<>(Arrays.asList("string_1", "string_2", "string_3"));
+
+        try {
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            Message.writeStringList(dataOutStream, expecteds);
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up output streams
+            dataOutStream.close();
+            byteOutStream.close();
+
+            // Init test input stream
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(testBytes);
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+            List<String> actuals = Message.readStringList(dataInputStream);
 
             // Clean up input streams
             dataInputStream.close();

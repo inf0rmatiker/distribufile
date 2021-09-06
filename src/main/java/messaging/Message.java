@@ -16,7 +16,7 @@ public abstract class Message {
     Logger log = LoggerFactory.getLogger(Message.class);
 
     public enum MessageType {
-        HEARTBEAT_MINOR, HEARTBEAT_MAJOR
+        HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST
     }
 
     public String hostname, ipAddress;
@@ -85,7 +85,7 @@ public abstract class Message {
      * - ip length (int 4 bytes)
      * - ip string (char[] n bytes)
      * - port (int 4 bytes)
-     * @throws IOException
+     * @throws IOException If fails to read from DataInputStream
      */
     public void unmarshal(DataInputStream dataInputStream) throws IOException {
         dataInputStream.readInt(); // skip over Message type integer
@@ -99,7 +99,7 @@ public abstract class Message {
      * collecting as a byte array into the object's marshalledBytes field. Lastly, the streams are closed.
      * @param dataOutStream The DataOutputStream we have been writing to.
      * @param byteOutStream The ByteArrayOutputStream we have been flushing bytes to.
-     * @throws IOException
+     * @throws IOException If fails to write to DataOutputStream
      */
     public void collectByteStream(DataOutputStream dataOutStream, ByteArrayOutputStream byteOutStream)
             throws IOException {
@@ -115,7 +115,7 @@ public abstract class Message {
      * 2. Reads the string bytes; creates and returns a string from said bytes.
      * @param dataInputStream The DataInputStream containing the bytes we are reading.
      * @return The String, whose length is specified before the string bytes.
-     * @throws IOException
+     * @throws IOException If fails to read from DataInputStream
      */
     public static String readString(DataInputStream dataInputStream) throws IOException {
         int stringLength = dataInputStream.readInt();
@@ -130,7 +130,7 @@ public abstract class Message {
      * 2. Writes the string bytes
      * @param dataOutputStream DataOutputStream containing the byte array we are writing to
      * @param value The String value we are writing to the byte array
-     * @throws IOException
+     * @throws IOException If fails to write to DataOutputStream
      */
     public static void writeString(DataOutputStream dataOutputStream, String value) throws IOException {
         dataOutputStream.writeInt(value.length());
@@ -143,7 +143,7 @@ public abstract class Message {
      * 2. Allocates a string array of size n.
      * 3. Iterates n times, reading a string each time into the string array.
      * @param dataInputStream The DataInputStream containing the bytes we are reading.
-     * @throws IOException
+     * @throws IOException If fails to read from DataInputStream
      */
     public static String[] readStringArray(DataInputStream dataInputStream) throws IOException {
         int count = dataInputStream.readInt();
@@ -160,10 +160,42 @@ public abstract class Message {
      * 2. Iterates n times, writing a string from the array to the stream each time.
      * @param dataOutputStream DataOutputStream containing the byte array we are writing to
      * @param values The String values we are writing to the byte array
-     * @throws IOException
+     * @throws IOException If fails to write to DataOutputStream
      */
     public static void writeStringArray(DataOutputStream dataOutputStream, String[] values) throws IOException {
         dataOutputStream.writeInt(values.length);
+        for (String value: values) {
+            writeString(dataOutputStream, value);
+        }
+    }
+
+    /**
+     * Reads a string List from the DataInputStream passed in as follows:
+     * 1. Reads the array length as an integer n.
+     * 2. Allocates a string array of size n.
+     * 3. Iterates n times, reading a string each time into the string List.
+     * @param dataInputStream The DataInputStream containing the bytes we are reading.
+     * @throws IOException If fails to read from DataInputStream
+     */
+    public static List<String> readStringList(DataInputStream dataInputStream) throws IOException {
+        int count = dataInputStream.readInt();
+        List<String> list = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            list.add(readString(dataInputStream));
+        }
+        return list;
+    }
+
+    /**
+     * Writes a string List to the DataOutputString passed in as follows:
+     * 1. Writes the string List length (n) as an integer.
+     * 2. Iterates n times, writing a string from the List to the stream each time.
+     * @param dataOutputStream DataOutputStream containing the byte array we are writing to
+     * @param values The String values we are writing to the byte array
+     * @throws IOException If fails to write to DataOutputStream
+     */
+    public static void writeStringList(DataOutputStream dataOutputStream, List<String> values) throws IOException {
+        dataOutputStream.writeInt(values.size());
         for (String value: values) {
             writeString(dataOutputStream, value);
         }
@@ -177,7 +209,7 @@ public abstract class Message {
      * 4. Reads the timestamp as a long, converts to Timestamp object
      * @param dataInputStream DataInputStream containing ChunkMetadata we are reading
      * @return A ChunkMetadata instance created from the above fields
-     * @throws IOException
+     * @throws IOException If fails to read from DataInputStream
      */
     public static ChunkMetadata readChunkMetadata(DataInputStream dataInputStream) throws IOException {
         String absoluteFilePath = readString(dataInputStream);
@@ -196,7 +228,7 @@ public abstract class Message {
      * 4. Writes the chunk's timestamp as a long
      * @param dataOutputStream DataOutputStream we are writing the ChunkMetadata object to
      * @param metadata ChunkMetadata instance
-     * @throws IOException
+     * @throws IOException If fails to write to DataOutputStream
      */
     public static void writeChunkMetadata(DataOutputStream dataOutputStream, ChunkMetadata metadata) throws IOException {
         writeString(dataOutputStream, metadata.getAbsoluteFilePath());
@@ -212,7 +244,7 @@ public abstract class Message {
      * 2. Iterates n times, reading a ChunkMetadata instance each time into the List.
      * @param dataInputStream DataInputStream containing ChunkMetadata List we are reading
      * @return A List of ChunkMetadata instances created from the above fields
-     * @throws IOException
+     * @throws IOException If fails to read from DataInputStream
      */
     public static List<ChunkMetadata> readChunkMetadataList(DataInputStream dataInputStream) throws IOException {
         int count = dataInputStream.readInt();
@@ -229,7 +261,7 @@ public abstract class Message {
      * 2. Iterates n times, writing a ChunkMetadata object from the List to the stream each time.
      * @param dataOutputStream DataOutputStream we are writing the ChunkMetadata objects to
      * @param metadata List of ChunkMetadata instances
-     * @throws IOException
+     * @throws IOException If fails to write to DataOutputStream
      */
     public static void writeChunkMetadataList(DataOutputStream dataOutputStream, List<ChunkMetadata> metadata) throws IOException {
         dataOutputStream.writeInt(metadata.size());
@@ -247,6 +279,7 @@ public abstract class Message {
         switch (type) {
             case 0: return MessageType.HEARTBEAT_MINOR;
             case 1: return MessageType.HEARTBEAT_MAJOR;
+            case 2: return MessageType.CHUNK_STORE_REQUEST;
             default: return null;
         }
     }
@@ -260,6 +293,7 @@ public abstract class Message {
         switch (type) {
             case HEARTBEAT_MINOR: return 0;
             case HEARTBEAT_MAJOR: return 1;
+            case CHUNK_STORE_REQUEST: return 2;
             default: return -1;
         }
     }
