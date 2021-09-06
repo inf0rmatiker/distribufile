@@ -4,7 +4,12 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.Constants;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,9 +17,13 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * Holds integrity information (SHA-1 hash checksums) for each of the slices of a chunk.
+ * Provides utility functions for calculating and manipulating above information.
+ */
 public class ChunkIntegrity {
 
-    Logger log = LoggerFactory.getLogger(ChunkIntegrity.class);
+    public static Logger log = LoggerFactory.getLogger(ChunkIntegrity.class);
 
     // A list of SHA-1 checksums, one for each slice of the chunk
     public List<String> sliceChecksums;
@@ -23,8 +32,58 @@ public class ChunkIntegrity {
         this.sliceChecksums = new ArrayList<>();
     }
 
+    /**
+     * Use this constructor for calculating integrity information of a chunk for the first time.
+     * @param chunk Raw bytes of the chunk
+     */
+    public ChunkIntegrity(byte[] chunk) {
+        this.sliceChecksums = calculateSliceChecksums(chunk);
+    }
+
     public List<String> getSliceChecksums() {
         return sliceChecksums;
+    }
+
+    /**
+     * Calculates the SHA-1 checksums for each of the slices in the chunk, and adds them to the in-memory
+     * sliceChecksums List.
+     * @param chunk The raw bytes of the entire chunk
+     * @return A SHA-1 hash text checksum for each of the slices within the chunk
+     */
+    public static List<String> calculateSliceChecksums(byte[] chunk) {
+        List<String> checksums = new ArrayList<>();
+
+        try {
+            // Init input stream from chunk
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(chunk);
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+            byte[] slice = new byte[Constants.SLICE_SIZE];
+            int bytesRead = dataInputStream.read(slice);
+            int sliceIndex = 0;
+            while (bytesRead != -1) {
+
+                // Resize slice if necessary (for last slice in chunk)
+                if (bytesRead < Constants.SLICE_SIZE) {
+                    byte[] resizedSlice = new byte[bytesRead];
+                    System.arraycopy(chunk, 0, resizedSlice, 0, resizedSlice.length);
+                    slice = resizedSlice;
+                }
+
+                checksums.add(calculateSHA1(slice));
+                log.info("Slice {} of size {} bytes: hash={}", sliceIndex, bytesRead, checksums.get(checksums.size()-1));
+                bytesRead = dataInputStream.read(slice); // read the next slice
+                sliceIndex++;
+            }
+            log.info("Finished reading final slice of chunk");
+
+            dataInputStream.close();
+            byteInputStream.close();
+        } catch (IOException e) {
+            log.error("ChunkIntegrity::calculateSliceChecksums(): Caught IOException while attempting to close() input streams!");
+        }
+
+        return checksums;
     }
 
     /**
@@ -49,8 +108,8 @@ public class ChunkIntegrity {
             // Convert message digest into hex value
             StringBuilder hashText = new StringBuilder(bigNumber.toString(16));
 
-            // Add preceding 0s to make it 32 bit
-            while (hashText.length() < 32) {
+            // Add preceding 0s to make it 20 bytes (40 characters)
+            while (hashText.length() < 40) {
                 hashText.insert(0, "0");
             }
 
@@ -58,7 +117,7 @@ public class ChunkIntegrity {
             return hashText.toString();
 
         } catch (NoSuchAlgorithmException e) {
-            System.err.println("Unable to find algorithm!");
+            log.error("Unable to find SHA-1 MessageDigest algorithm!");
             return "";
         }
     }
