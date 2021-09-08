@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="distribufile.networking.ServerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2021-09-08T20:10:44" hostname="Matthews-MacBook-Pro.local" time="0.012">
+<testsuite name="distribufile.networking.ServerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2021-09-08T22:54:22" hostname="Matthews-MacBook-Pro.local" time="0.007">
   <properties/>
-  <testcase name="testArgConstructor()" classname="distribufile.networking.ServerTest" time="0.01"/>
-  <testcase name="testRun()" classname="distribufile.networking.ServerTest" time="0.0"/>
-  <testcase name="testDefaultConstructor()" classname="distribufile.networking.ServerTest" time="0.0"/>
+  <testcase name="testArgConstructor()" classname="distribufile.networking.ServerTest" time="0.005"/>
+  <testcase name="testRun()" classname="distribufile.networking.ServerTest" time="0.001"/>
+  <testcase name="testDefaultConstructor()" classname="distribufile.networking.ServerTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

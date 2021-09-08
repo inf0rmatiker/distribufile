@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="distribufile.messaging.MessageTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2021-09-08T20:10:44" hostname="Matthews-MacBook-Pro.local" time="0.009">
+<testsuite name="distribufile.messaging.MessageTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2021-09-08T22:54:22" hostname="Matthews-MacBook-Pro.local" time="0.007">
   <properties/>
-  <testcase name="testIntegerFromTypeValid()" classname="distribufile.messaging.MessageTest" time="0.0"/>
+  <testcase name="testIntegerFromTypeValid()" classname="distribufile.messaging.MessageTest" time="0.001"/>
   <testcase name="testReadStringArrayEmpty()" classname="distribufile.messaging.MessageTest" time="0.0"/>
   <testcase name="testTypeFromIntegerValid()" classname="distribufile.messaging.MessageTest" time="0.0"/>
   <testcase name="testWriteAndReadChunkMetadataList()" classname="distribufile.messaging.MessageTest" time="0.001"/>
   <testcase name="testWriteAndReadStringList()" classname="distribufile.messaging.MessageTest" time="0.0"/>
-  <testcase name="testTypeFromIntegerInvalid()" classname="distribufile.messaging.MessageTest" time="0.0"/>
-  <testcase name="testWriteStringByteLength()" classname="distribufile.messaging.MessageTest" time="0.0"/>
+  <testcase name="testTypeFromIntegerInvalid()" classname="distribufile.messaging.MessageTest" time="0.001"/>
+  <testcase name="testWriteStringByteLength()" classname="distribufile.messaging.MessageTest" time="0.001"/>
   <testcase name="testReadStringNonempty()" classname="distribufile.messaging.MessageTest" time="0.0"/>
   <testcase name="testReadStringArrayNonempty()" classname="distribufile.messaging.MessageTest" time="0.001"/>
-  <testcase name="testWriteAndReadChunkMetadata()" classname="distribufile.messaging.MessageTest" time="0.001"/>
+  <testcase name="testWriteAndReadChunkMetadata()" classname="distribufile.messaging.MessageTest" time="0.0"/>
   <testcase name="testWriteStringArrayByteLength()" classname="distribufile.messaging.MessageTest" time="0.0"/>
   <testcase name="testReadStringEmpty()" classname="distribufile.messaging.MessageTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>

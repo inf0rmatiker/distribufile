@@ -60,10 +60,10 @@ application {
     // Define the main class for the application.
      if (project.hasProperty('mode')) {
         if (mode == 'client'){
-            mainClass = 'gradle_project.networking.Client'
+            mainClass = 'distribufile.networking.Client'
         } 
         else if (mode == 'server'){
-            mainClass = 'gradle_project.networking.Server'
+            mainClass = 'distribufile.networking.Server'
         }
     } else {
             println 'Invalid mode entered';
