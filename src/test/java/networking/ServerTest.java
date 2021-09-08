@@ -37,34 +37,5 @@ public class ServerTest {
         //TODO: implement this test
     }
 
-//    @Test
-//    public void testValidClientConnection() {
-//        Server server = new Server(TESTING_PORT);
-//        try {
-//            Socket clientSocket = new Socket(TESTING_HOST, TESTING_PORT);
-//            Socket socket = server.getServerSocket().accept();
-//            DataOutputStream dataOutputStream = new DataOutputStream(clientSocket.getOutputStream());
-//            dataOutputStream.writeInt(1);
-//            assert server.validClientConnection(socket);
-//            socket.close();
-//            clientSocket.close();
-//            server.getServerSocket().close();
-//        } catch (IOException e) {
-//            System.out.println("Error: " + e.getMessage());
-//        }
-//    }
-//
-//    @Test
-//    public void testInvalidClientConnection() {
-//        Server server = new Server(TESTING_PORT);
-//        try {
-//            Socket socket = new Socket();
-//            assert !server.validClientConnection(socket);
-//            socket.close();
-//            server.getServerSocket().close();
-//        } catch (IOException e) {
-//            System.out.println("Error: " + e.getMessage());
-//        }
-//    }
-    
+
 }

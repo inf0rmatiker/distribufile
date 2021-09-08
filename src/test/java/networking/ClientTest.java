@@ -17,62 +17,11 @@ public class ClientTest {
     public static Server server;
     public static Thread serverThread;
 
-    @BeforeAll
-    public static void setup() {
-        server = new Server(DEFAULT_SERVER_PORT);
-        serverThread = new Thread(server);
-        serverThread.start();
-    }
-
-    @Test
-    public void testDefaultConstructor() {
-        Client client = new Client();
-        assertEquals(client.getHost(), DEFAULT_SERVER_HOST);
-        assertEquals(client.getPort(), DEFAULT_SERVER_PORT);
-        try {
-            client.getSocket().close();
-            System.out.println("... client teardown\n");
-        } catch (IOException e) {
-            System.out.println("Could not close socket");
-        }
-    }
-
-    @Test
-    public void testHostOnlyConstructor() {
-        Client client = new Client(TESTING_HOST);
-        assertEquals(client.getHost(), TESTING_HOST);
-        assertEquals(client.getPort(), DEFAULT_SERVER_PORT);
-        try {
-            client.getSocket().close();
-            System.out.println("... client teardown\n");
-        } catch (IOException e) {
-            System.out.println("Could not close socket");
-        }
-    }
 
     // @Test
-    // public void testArgConstructor() {
-    //     Client client = new Client(TESTING_HOST, TESTING_PORT);
-    //     assertEquals(client.getHost(), TESTING_HOST);
-    //     assertEquals(client.getPort(), TESTING_PORT);
-    //     try {
-    //         client.getSocket().close();
-    //         System.out.println("... client teardown\n");
-    //     } catch (IOException e) {
-    //         System.out.println("Could not close socket");
-    //     }
-    // }
-
-    // @Test
-    // public void testInitialConnection() {
+    // public void testDefaultConstructor() {
     //     Client client = new Client();
-    //     // System.setIn(new java.io.ByteArrayInputStream(TESTING_HOST.getBytes()));
-    //     client.initialConnection();
-    //     assert client.getSocket().isConnected();
-
-    // }
-
-    // public void tearDown(Client client) {
+    //     assertEquals(client.getHost(), DEFAULT_SERVER_HOST);
     //     try {
     //         client.getSocket().close();
     //         System.out.println("... client teardown\n");
@@ -81,15 +30,18 @@ public class ClientTest {
     //     }
     // }
 
-    @AfterAll
-    public static void tearDown() {
-        try {
-            serverThread.interrupt();
-            server.getServerSocket().close();
-            System.out.println("... server teardown\n");
-        } catch (IOException e) {
-            System.out.println("Could not close socket");
-        } 
-    }
+    // @Test
+    // public void testHostOnlyConstructor() {
+    //     Client client = new Client(TESTING_HOST);
+    //     assertEquals(client.getHost(), TESTING_HOST);
+    //     try {
+    //         client.getSocket().close();
+    //         System.out.println("... client teardown\n");
+    //     } catch (IOException e) {
+    //         System.out.println("Could not close socket");
+    //     }
+    // }
+
+
 
 }

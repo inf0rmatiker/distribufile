@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import util.CLI;
+
 public class Server implements Runnable {
 
     public final static Integer PORT = 9001;
@@ -64,11 +66,19 @@ public class Server implements Runnable {
      * @throws IOException when inputStream cannot read
      */
     private void handleResponse(DataInputStream dataInputStream) throws IOException {
+        
         System.out.println("Server received message: " + dataInputStream.readUTF());
     }
 
     public static void main(String[] args) throws IOException {
-        Server server = new Server();
+        Server server;
+        if (args.length != 1) {
+            String port = CLI.getServerPort(args)[0];
+            server = new Server(Integer.parseInt(port));    
+        }
+        else {
+            server = new Server();
+        }
         server.run();
     }
 

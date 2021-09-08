@@ -100,6 +100,9 @@ public class Client implements Runnable {
      * @throws ClientException Throws ClientException when the client is exiting the program
      */
     private void filterInput(String input) throws ClientException {
+        if (input == null) {
+            return;
+        }
         if (input.equals("exit")) {
             System.out.println("Exiting...");
             closeConnection();
@@ -166,7 +169,7 @@ public class Client implements Runnable {
      * @param host the host the user is connecting to
      * @param port the port number the user will connect to
      */
-    private void connectToServer(String host, String port){
+    private void connectToServer(String host, String port) {
         try {
 
             if(this.socket != null && !this.socket.isClosed()) {
@@ -189,7 +192,7 @@ public class Client implements Runnable {
     public static void main(String[] args) {
 
         if(args.length != 4){
-            System.out.println(CLI.CLI_HELP);
+            System.out.println(CLI.CLI_CLIENT_HELP);
             System.exit(1);
         }
         else {
