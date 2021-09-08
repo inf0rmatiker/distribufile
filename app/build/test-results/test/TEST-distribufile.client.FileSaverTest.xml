@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="distribufile.client.FileSaverTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2021-09-08T20:10:44" hostname="Matthews-MacBook-Pro.local" time="0.014">
+  <properties/>
+  <testcase name="testMultipleWritesSimple()" classname="distribufile.client.FileSaverTest" time="0.009"/>
+  <testcase name="testConstructorFileIsADirectory()" classname="distribufile.client.FileSaverTest" time="0.001"/>
+  <testcase name="testWriteSimple()" classname="distribufile.client.FileSaverTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[log4j:WARN No appenders could be found for logger (distribufile.client.FileSaver).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+]]></system-err>
+</testsuite>

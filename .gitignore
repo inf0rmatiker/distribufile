@@ -28,3 +28,6 @@ hs_err_pid*
 
 # Compiled target dir
 target/
+
+# Mac Files
+.DS_Store
