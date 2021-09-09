@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 
 import static util.Constants.KB;
@@ -22,12 +23,15 @@ import static util.Constants.KB;
 public class Chunk {
 
     public static Logger log = LoggerFactory.getLogger(Chunk.class);
-    private static String CHUNK_DIR;
+    private static String CHUNK_DIR; // Not visible for external use on purpose
 
+    // Chunk metadata
     public ChunkMetadata metadata;
 
+    // Chunk integrity checksums for each of the slices
     public ChunkIntegrity integrity;
 
+    // Raw bytes of the chunk itself
     public byte[] data;
 
     public Chunk(ChunkMetadata metadata, ChunkIntegrity integrity, byte[] data) {
@@ -100,13 +104,19 @@ public class Chunk {
         String chunkPath = String.format("%s%s_chunk%d", getChunkDir(), chunk.metadata.getAbsoluteFilePath(),
                 chunk.metadata.getSequence());
 
+        log.info("writing chunk to {}", chunkPath);
+
+        // Initialize output streams for writing to file
         FileOutputStream fileOutputStream = new FileOutputStream(chunkPath);
         DataOutputStream dataOutStream = new DataOutputStream(fileOutputStream);
 
+        // Write chunk metadata, integrity information, and raw data to disk
         Message.writeChunkMetadata(dataOutStream, chunk.metadata);
         Message.writeStringList(dataOutStream, chunk.integrity.getSliceChecksums());
         dataOutStream.write(chunk.data, 0, chunk.data.length);
 
+        // Clean up output streams
+        dataOutStream.flush();
         dataOutStream.close();
         fileOutputStream.close();
     }
@@ -146,6 +156,18 @@ public class Chunk {
             sb.append(String.format("\t<-- Slice[%d], %d bytes -->\n", numberFullSizedSlices, remainingBytes));
         }
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) return false;
+        if (other == this) return true;
+        if (!(other instanceof Chunk)) return false;
+        Chunk cOther = (Chunk) other;
+        return (this.metadata.equals(cOther.metadata) &&
+                this.integrity.equals(cOther.integrity) &&
+                Arrays.equals(this.data, cOther.data)
+        );
     }
 
 }

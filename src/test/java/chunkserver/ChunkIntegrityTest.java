@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static util.Constants.CHUNK_SIZE;
@@ -98,6 +99,106 @@ public class ChunkIntegrityTest {
         } catch (IOException e) {
             fail("Caught IOException!");
         }
+    }
 
+    @Test
+    public void testIsValidChunkUnchangedData() {
+        String absoluteFilePath = getTestResourceAbsolutePath(testFiles[1]);
+
+        try {
+            FileInputStream fileInputStream = new FileInputStream(absoluteFilePath);
+            BufferedInputStream reader = new BufferedInputStream(fileInputStream, CHUNK_SIZE);
+
+            byte[] chunk = new byte[35 * KB];
+            int bytesRead = reader.read(chunk, 0, 35 * KB);
+
+            assertTrue(bytesRead != -1);
+            assertEquals(35 * KB, chunk.length);
+            List<String> expecteds = new ArrayList<>(Arrays.asList(
+                    "ffabe7dd8cf71b40367392950340ca9c4e7d707c",
+                    "02217ffa9bf6089d892c90fcc8cd2c79eb93fdbf",
+                    "9d47732fa8be3ae8c43c3d71fd3223d1503d9bf8",
+                    "71ecc2b28d2a6b7195f45982583490b1ac12c245",
+                    "2403616b097d5fa3664e48ce0a000e991e795092"
+            ));
+            ChunkIntegrity testChunkIntegrity = new ChunkIntegrity(expecteds);
+            assertTrue(testChunkIntegrity.isChunkValid(chunk));
+
+            reader.close();
+            fileInputStream.close();
+        } catch (FileNotFoundException e) {
+            fail("Caught FileNotFoundException!");
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testIsValidChunkChangedData() {
+        String absoluteFilePath = getTestResourceAbsolutePath(testFiles[1]);
+
+        try {
+            FileInputStream fileInputStream = new FileInputStream(absoluteFilePath);
+            BufferedInputStream reader = new BufferedInputStream(fileInputStream, CHUNK_SIZE);
+
+            byte[] chunk = new byte[35 * KB];
+            int bytesRead = reader.read(chunk, 0, 35 * KB);
+
+            assertTrue(bytesRead != -1);
+            assertEquals(35 * KB, chunk.length);
+            List<String> expecteds = new ArrayList<>(Arrays.asList(
+                    "ffabe7dd8cf71b40367392950340ca9c4e7d707c",
+                    "02217ffa9bf6089d892c90fcc8cd2c79eb93fdbf",
+                    "9d47732fa8be3ae8c43c3d71fd3223d1503d9bf8",
+                    "71ecc2b28d2a6b7195f45982583490b1ac12c245",
+                    "2403616b097d5fa3664e48ce0a000e991e795092"
+            ));
+
+            // Modify chunk bytes at an arbitrary location and assert the checksums fail
+            chunk[0] = 0x00; chunk[1] = 0x00; chunk[2] = 0x00;
+            ChunkIntegrity testChunkIntegrity = new ChunkIntegrity(expecteds);
+            assertFalse(testChunkIntegrity.isChunkValid(chunk));
+
+            reader.close();
+            fileInputStream.close();
+        } catch (FileNotFoundException e) {
+            fail("Caught FileNotFoundException!");
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testIsValidChunkChangedReadChecksums() {
+        String absoluteFilePath = getTestResourceAbsolutePath(testFiles[1]);
+
+        try {
+            FileInputStream fileInputStream = new FileInputStream(absoluteFilePath);
+            BufferedInputStream reader = new BufferedInputStream(fileInputStream, CHUNK_SIZE);
+
+            byte[] chunk = new byte[35 * KB];
+            int bytesRead = reader.read(chunk, 0, 35 * KB);
+
+            assertTrue(bytesRead != -1);
+            assertEquals(35 * KB, chunk.length);
+
+            // Modify checksums that are "read" and assert it causes failure
+            List<String> expecteds = new ArrayList<>(Arrays.asList(
+                    "ffabe7dd8cf71b40367392950340ca9c4e7d707c",
+                    "02217ffa9bf6089d892c90fcc8cd2c79eb93fdbf",
+                    "cc47732fa8be3ae8c43c3d71fd3223d1503d9bf8", // should start with "9d..." instead of "cc..."
+                    "71ecc2b28d2a6b7195f45982583490b1ac12c245",
+                    "2403616b097d5fa3664e48ce0a000e991e795092"
+            ));
+            ChunkIntegrity testChunkIntegrity = new ChunkIntegrity(expecteds);
+            assertFalse(testChunkIntegrity.isChunkValid(chunk));
+
+            reader.close();
+            fileInputStream.close();
+        } catch (FileNotFoundException e) {
+            fail("Caught FileNotFoundException!");
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
     }
 }

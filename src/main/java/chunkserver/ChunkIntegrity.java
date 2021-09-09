@@ -11,6 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import java.math.BigInteger;
@@ -28,6 +29,10 @@ public class ChunkIntegrity {
     // A list of SHA-1 checksums, one for each slice of the chunk
     public List<String> sliceChecksums;
 
+    /**
+     * Use this constructor when reading pre-computed slice checksums from a stored chunk file.
+     * @param sliceChecksums Read slice checksums from the file's integrity information
+     */
     public ChunkIntegrity(List<String> sliceChecksums) {
         this.sliceChecksums = sliceChecksums;
     }
@@ -43,6 +48,30 @@ public class ChunkIntegrity {
 
     public List<String> getSliceChecksums() {
         return sliceChecksums;
+    }
+
+    /**
+     * Validates the chunk data by comparing the checksums we read in with the checksums calculated on the actual
+     * chunk data. If they don't match then one or the other has been altered.
+     * @param chunk The actual chunk data as a byte array.
+     * @return True if all the checksums match, false otherwise.
+     */
+    public boolean isChunkValid(byte[] chunk) {
+        List<String> actualChecksums = calculateSliceChecksums(chunk);
+        if (actualChecksums.size() != this.sliceChecksums.size()) {
+            log.error("Expected {} checksums, only calculated {}", this.sliceChecksums.size(), actualChecksums.size());
+            return false;
+        }
+        for (int i = 0; i < actualChecksums.size(); i++) {
+            String actualChecksum = actualChecksums.get(i);
+            String expectedChecksum = this.sliceChecksums.get(i);
+            if (!actualChecksum.equals(expectedChecksum)) {
+                log.error("Expected checksums[{}] to be {}, got {} instead", i, expectedChecksum, actualChecksum);
+                return false;
+            }
+        }
+        log.info("All checksums match; chunk is valid");
+        return true;
     }
 
     /**
@@ -155,6 +184,15 @@ public class ChunkIntegrity {
             sb.append(String.format("\t\tChecksum: %s\n", sliceChecksum));
         }
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) return false;
+        if (other == this) return true;
+        if (!(other instanceof ChunkIntegrity)) return false;
+        ChunkIntegrity ciOther = (ChunkIntegrity) other;
+        return (this.sliceChecksums.equals(ciOther.getSliceChecksums()));
     }
 
 }
