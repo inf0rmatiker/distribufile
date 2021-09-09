@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="distribufile.messaging.MessageFactoryTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2021-09-08T22:54:22" hostname="Matthews-MacBook-Pro.local" time="0.019">
-  <properties/>
-  <testcase name="testCreateMessage()" classname="distribufile.messaging.MessageFactoryTest" time="0.018"/>
-  <testcase name="testGetInstance()" classname="distribufile.messaging.MessageFactoryTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

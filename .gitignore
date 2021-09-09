@@ -31,3 +31,14 @@ target/
 
 # Mac Files
 .DS_Store
+
+# VS Code
+.settings
+.vscode
+
+# Gradle Files
+.classpath
+.project
+./gradle/*
+bin/*
+build/*
