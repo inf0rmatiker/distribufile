@@ -39,6 +39,6 @@ target/
 # Gradle Files
 .classpath
 .project
-./gradle/*
+.gradle/*
 bin/*
 build/*
