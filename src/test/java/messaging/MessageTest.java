@@ -252,7 +252,7 @@ public class MessageTest {
     public void testWriteAndReadChunkMetadata() {
         Instant now = Instant.now();
         Timestamp tsNow = Timestamp.from(now);
-        ChunkMetadata expected = new ChunkMetadata("/test_filepath", 0, 0, tsNow);
+        ChunkMetadata expected = new ChunkMetadata("/test_filepath", 0, 0, tsNow, 0);
 
         try {
             // Build test byte array
@@ -287,8 +287,8 @@ public class MessageTest {
         List<ChunkMetadata> expecteds = new ArrayList<>();
         Instant now = Instant.now();
         Timestamp tsNow = Timestamp.from(now);
-        expecteds.add(new ChunkMetadata("/test_1_filepath", 1, 7, tsNow));
-        expecteds.add(new ChunkMetadata("/test_2_filepath", 1, 4, tsNow));
+        expecteds.add(new ChunkMetadata("/test_1_filepath", 1, 7, tsNow, 0));
+        expecteds.add(new ChunkMetadata("/test_2_filepath", 1, 4, tsNow, 0));
 
         try {
             // Build test byte array

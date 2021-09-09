@@ -18,11 +18,15 @@ public class ChunkMetadata {
     // The timestamp the chunk was last updated
     public Timestamp timestamp;
 
-    public ChunkMetadata(String absoluteFilePath, Integer version, Integer sequence, Timestamp timestamp) {
+    // The size in bytes of the raw chunk data
+    public Integer sizeBytes;
+
+    public ChunkMetadata(String absoluteFilePath, Integer version, Integer sequence, Timestamp timestamp, Integer sizeBytes) {
         this.absoluteFilePath = absoluteFilePath;
         this.version = version;
         this.sequence = sequence;
         this.timestamp = timestamp;
+        this.sizeBytes = sizeBytes;
     }
 
     public String getAbsoluteFilePath() {
@@ -41,6 +45,10 @@ public class ChunkMetadata {
         return timestamp;
     }
 
+    public Integer getSizeBytes() {
+        return sizeBytes;
+    }
+
     @Override
     public boolean equals(Object other) {
         if (other == null) return false;
@@ -50,7 +58,17 @@ public class ChunkMetadata {
         return (this.absoluteFilePath.equals(cmOther.getAbsoluteFilePath()) &&
                 this.version.equals(cmOther.getVersion()) &&
                 this.sequence.equals(cmOther.getSequence()) &&
-                this.timestamp.getTime() == cmOther.getTimestamp().getTime());
+                this.timestamp.getTime() == cmOther.getTimestamp().getTime() &&
+                this.sizeBytes.equals(cmOther.getSizeBytes())
+        );
     }
 
+    @Override
+    public String toString() {
+        return "Chunk Metadata:\n" + String.format("\tFile: %s\n", this.absoluteFilePath) +
+                String.format("\tVersion: %d\n", this.version) +
+                String.format("\tSequence: %d\n", this.sequence) +
+                String.format("\tTimestamp: %s\n", this.timestamp) +
+                String.format("\tSize: %s\n", this.sizeBytes);
+    }
 }

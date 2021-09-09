@@ -28,8 +28,8 @@ public class ChunkIntegrity {
     // A list of SHA-1 checksums, one for each slice of the chunk
     public List<String> sliceChecksums;
 
-    public ChunkIntegrity() {
-        this.sliceChecksums = new ArrayList<>();
+    public ChunkIntegrity(List<String> sliceChecksums) {
+        this.sliceChecksums = sliceChecksums;
     }
 
     /**
@@ -139,6 +139,16 @@ public class ChunkIntegrity {
      */
     public static String bytesToHexString(byte[] hexArray) {
         return Hex.encodeHexString(hexArray);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("Chunk Integrity:\n");
+        sb.append(String.format("\tSlices: %d\n", this.sliceChecksums.size()));
+        for (String sliceChecksum: this.sliceChecksums) {
+            sb.append(String.format("\t\tChecksum: %s\n", sliceChecksum));
+        }
+        return sb.toString();
     }
 
 }
