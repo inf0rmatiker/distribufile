@@ -1,6 +1,7 @@
 package client;
 
 import messaging.HeartbeatMajor;
+import util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.Constants;

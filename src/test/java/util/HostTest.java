@@ -1,11 +1,10 @@
 package util;
 
+import java.net.*;
+
 import org.junit.jupiter.api.Test;
 
-import java.net.UnknownHostException;
-
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class HostTest {
 

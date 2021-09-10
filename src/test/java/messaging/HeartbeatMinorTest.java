@@ -3,6 +3,9 @@ package messaging;
 import messaging.Message.MessageType;
 import org.junit.jupiter.api.Test;
 
+import messaging.HeartbeatMinor;
+import messaging.Message;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;

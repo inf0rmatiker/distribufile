@@ -1,6 +1,8 @@
 package messaging;
 
 import chunkserver.ChunkMetadata;
+import messaging.Message;
+
 import org.junit.jupiter.api.Test;
 import messaging.Message.MessageType;
 
@@ -13,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 
 /**
  * Tests the static methods of the abstract class Message.

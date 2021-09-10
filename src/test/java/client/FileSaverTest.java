@@ -2,6 +2,8 @@ package client;
 
 import org.junit.jupiter.api.Test;
 
+import client.FileSaver;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;

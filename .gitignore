@@ -28,3 +28,17 @@ hs_err_pid*
 
 # Compiled target dir
 target/
+
+# Mac Files
+.DS_Store
+
+# VS Code
+.settings
+.vscode
+
+# Gradle Files
+.classpath
+.project
+.gradle/*
+bin/*
+build/*

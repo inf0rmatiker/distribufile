@@ -19,4 +19,12 @@ public class Constants {
     public static final int CHUNK_SERVER_PORT = 9000;
     public static final int CHUNK_SIZE = 64 * KB;
     public static final int SLICE_SIZE = 8 * KB;
+
+    // Defualts for client and server
+    public static Integer DEFAULT_SERVER_PORT = 9001;
+    public static String DEFAULT_SERVER_HOST = "localhost";
+
+    // CLI help messages
+    public static String CLI_CLIENT_HELP = "Run with command line inputs to change host and port:\n -h hostname \n -p port number";
+    public static String CLI_SERVER_HELP = "Run with command line inputs to change port: \n -p port number";
 }
