@@ -117,11 +117,6 @@ public class ChunkIntegrity {
     }
 
     /**
-<<<<<<< HEAD
-=======
->>>>>>> DF-29
-=======
->>>>>>> DF-29
      * Calculates the SHA-1 hash text of a slice byte array.
      * Code structure taken from https://www.geeksforgeeks.org/sha-1-hash-in-java/ with modifications
      * made to string building efficiency.
