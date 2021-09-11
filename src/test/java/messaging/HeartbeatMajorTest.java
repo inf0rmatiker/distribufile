@@ -31,8 +31,8 @@ public class HeartbeatMajorTest {
         List<ChunkMetadata> chunksMetadata = new ArrayList<>();
         Instant now = Instant.now();
         Timestamp tsNow = Timestamp.from(now);
-        chunksMetadata.add(new ChunkMetadata("/test_1_filepath", 1, 7, tsNow));
-        chunksMetadata.add(new ChunkMetadata("/test_2_filepath", 1, 4, tsNow));
+        chunksMetadata.add(new ChunkMetadata("/test_1_filepath", 1, 7, tsNow, 0));
+        chunksMetadata.add(new ChunkMetadata("/test_2_filepath", 1, 4, tsNow, 0));
 
         HeartbeatMajor a = new HeartbeatMajor(testHostname, testIpAddr, testPort, testTotalChunksMaintained,
                 testFreeSpaceAvailable, chunksMetadata);

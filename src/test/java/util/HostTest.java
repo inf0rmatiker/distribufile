@@ -12,7 +12,6 @@ public class HostTest {
     public void testGetHostIpAddress() {
         try {
             String ipAddress = Host.getIpAddress();
-            System.out.println(ipAddress); // for debugging
             assertNotEquals("", ipAddress);
         } catch (UnknownHostException e) {
             fail("Caught UnknownHostException!");
@@ -23,12 +22,9 @@ public class HostTest {
     public void testGetHostHostname() {
         try {
             String hostname = Host.getHostname();
-            System.out.println(hostname); // for debugging
             assertNotEquals("", hostname);
         } catch (UnknownHostException e) {
             fail("Caught UnknownHostException!");
         }
-
-
     }
 }

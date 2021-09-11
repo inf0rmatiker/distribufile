@@ -217,7 +217,8 @@ public abstract class Message {
         int sequence = dataInputStream.readInt();
         long tsMillis = dataInputStream.readLong(); // read timestamp as long milliseconds since January 1, 1970, GMT
         Timestamp timestamp = new Timestamp(tsMillis);
-        return new ChunkMetadata(absoluteFilePath, version, sequence, timestamp);
+        int sizeBytes = dataInputStream.readInt();
+        return new ChunkMetadata(absoluteFilePath, version, sequence, timestamp, sizeBytes);
     }
 
     /**
@@ -236,6 +237,7 @@ public abstract class Message {
         dataOutputStream.writeInt(metadata.getSequence());
         long tsMillis = metadata.getTimestamp().getTime(); // get timestamp as milliseconds since January 1, 1970, GMT
         dataOutputStream.writeLong(tsMillis);
+        dataOutputStream.writeInt(metadata.getSizeBytes());
     }
 
     /**
