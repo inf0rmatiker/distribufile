@@ -10,8 +10,8 @@ public class CLI {
     public static String[] getHostAndPort(String[] args) {
         Getopt g = new Getopt("CLI.java", args, "h:p:");
         int c;
-        String host = Constants.DEFAULT_SERVER_HOST;
-        String port = String.valueOf(Constants.DEFAULT_SERVER_PORT);
+        String host = "localhost";
+        String port = String.valueOf(Constants.CONTROLLER_PORT);
         while ((c = g.getopt()) != -1) {
             switch (c) {
                 case 'h':
@@ -25,8 +25,8 @@ public class CLI {
             }
         }
 
-        if(host.equals(Constants.DEFAULT_SERVER_HOST) && port.equals(String.valueOf(Constants.DEFAULT_SERVER_PORT))) {
-            System.out.println("Host and Port set to default. \"" + Constants.DEFAULT_SERVER_HOST + "\" " + Constants.DEFAULT_SERVER_PORT);
+        if(host.equals("localhost") && port.equals(String.valueOf(Constants.CONTROLLER_PORT))) {
+            System.out.println("Host and Port set to default. \"" + "localhost" + "\" " + Constants.CONTROLLER_PORT);
             System.out.println(Constants.CLI_CLIENT_HELP);
         }
 
@@ -37,7 +37,7 @@ public class CLI {
     public static String[] getServerPort(String[] args) {
         Getopt g = new Getopt("CLI.java", args, "p:");
         int c;
-        String port = String.valueOf(Constants.DEFAULT_SERVER_PORT);
+        String port = String.valueOf(Constants.CONTROLLER_PORT);
         while ((c = g.getopt()) != -1) {
             switch (c) {
                 case 'p':
@@ -48,8 +48,8 @@ public class CLI {
             }
         }
 
-        if(port.equals(String.valueOf(Constants.DEFAULT_SERVER_PORT))) {
-            System.out.println("Port set to default. \"" + Constants.DEFAULT_SERVER_PORT + "\"");
+        if(port.equals(String.valueOf(Constants.CONTROLLER_PORT))) {
+            System.out.println("Port set to default. \"" + Constants.CONTROLLER_PORT + "\"");
             System.out.println(Constants.CLI_SERVER_HELP);
         }
 

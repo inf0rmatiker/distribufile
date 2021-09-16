@@ -14,15 +14,18 @@ public class Constants {
     public static final long  GiB = 1024 * MiB, GB = 1000 * MB;
     public static final long  TiB = 1024 * GiB, TB = 1000 * GB;
 
+    // Time constants
+    public static final short MS = 1;
+    public static final short SEC = 1000 * MS;
+    public static final int   MIN = 60 * SEC;
+
     // Service-specific constants
     public static final int CONTROLLER_PORT = 9001;
     public static final int CHUNK_SERVER_PORT = 9000;
     public static final int CHUNK_SIZE = 64 * KB;
     public static final int SLICE_SIZE = 8 * KB;
-
-    // Defualts for client and server
-    public static Integer DEFAULT_SERVER_PORT = 9001;
-    public static String DEFAULT_SERVER_HOST = "localhost";
+    public static final int HEARTBEAT_MINOR_INTERVAL = 30 * SEC;
+    public static final int HEARTBEAT_MAJOR_INTERVAL = 5 * MIN;
 
     // CLI help messages
     public static String CLI_CLIENT_HELP = "Run with command line inputs to change host and port:\n -h hostname \n -p port number";

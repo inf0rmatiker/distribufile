@@ -39,13 +39,13 @@ public class ClientWriteResponseTest {
             dataOutStream.close();
             byteOutStream.close();
 
-            // Create a new Message from a's marshaled bytes
-            ClientWriteResponse b = new ClientWriteResponse(a.getMarshaledBytes());
-
             // Init test input stream
-            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(b.getMarshaledBytes());
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(a.getMarshaledBytes());
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
-            b.unmarshal(dataInputStream);
+            dataInputStream.readInt(); // skip type
+
+            // Create a new Message from a's marshaled bytes
+            ClientWriteResponse b = new ClientWriteResponse(dataInputStream);
 
             // Clean up input streams
             dataInputStream.close();

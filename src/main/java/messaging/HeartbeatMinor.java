@@ -5,6 +5,7 @@ import util.Host;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -28,8 +29,8 @@ public class HeartbeatMinor extends Heartbeat {
         this.corruptedFiles = corruptedFiles;
     }
 
-    public HeartbeatMinor(byte[] marshaledBytes) {
-        this.marshaledBytes = marshaledBytes;
+    public HeartbeatMinor(DataInputStream dataInputStream) throws IOException {
+        this.unmarshal(dataInputStream);
     }
 
     @Override

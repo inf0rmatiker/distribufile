@@ -27,8 +27,8 @@ public class HeartbeatMajor extends Heartbeat {
         this.chunksMetadata = chunksMetadata;
     }
 
-    public HeartbeatMajor(byte[] marshaledBytes) {
-        this.marshaledBytes = marshaledBytes;
+    public HeartbeatMajor(DataInputStream dataInputStream) throws IOException {
+        this.unmarshal(dataInputStream);
     }
 
 

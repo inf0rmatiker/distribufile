@@ -31,25 +31,22 @@ public class MessageFactory {
 
     /**
      * Creates and returns a concrete Message subclass instance from the integer type specified by the byte message.
-     * @param marshaledBytes byte[] containing the message
+     * @param dataInputStream DataInputStream on the Socket containing the message bytes.
      * @return A concrete Message subclass instance
      * @throws IOException
      */
-    public Message createMessage(byte[] marshaledBytes) throws IOException {
-
-        // Read the first integer of the marshaledBytes
-        ByteArrayInputStream byteInStream = new ByteArrayInputStream(marshaledBytes);
-        DataInputStream dataInStream = new DataInputStream(new BufferedInputStream(byteInStream));
-        int integerType = dataInStream.readInt();
-        dataInStream.close();
-        byteInStream.close();
+    public Message createMessage(DataInputStream dataInputStream) throws IOException {
+        int integerType = dataInputStream.readInt();
 
         // Create concrete Message using type in byte message
         Message.MessageType type = Message.typeFromInteger(integerType);
         if (type != null) {
             switch (type) {
-                case HEARTBEAT_MINOR: return new HeartbeatMinor(marshaledBytes);
-                case HEARTBEAT_MAJOR: return new HeartbeatMajor(marshaledBytes);
+                case HEARTBEAT_MINOR: return new HeartbeatMinor(dataInputStream);
+                case HEARTBEAT_MAJOR: return new HeartbeatMajor(dataInputStream);
+                case CHUNK_STORE_REQUEST: return new ChunkStoreRequest(dataInputStream);
+                case CLIENT_WRITE_REQUEST: return new ClientWriteRequest(dataInputStream);
+                case CLIENT_WRITE_RESPONSE: return new ClientWriteResponse(dataInputStream);
                 default: return null;
             }
         } else {

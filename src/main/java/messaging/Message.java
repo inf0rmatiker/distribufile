@@ -79,7 +79,6 @@ public abstract class Message {
     /**
      * Unmarshals/unpacks the header fields from the message's byte array into the instance variables.
      * The message header is represented as follows:
-     * - message type (int 4 bytes)
      * - hostname length (int 4 bytes)
      * - hostname string (char[] n bytes)
      * - ip length (int 4 bytes)
@@ -88,7 +87,6 @@ public abstract class Message {
      * @throws IOException If fails to read from DataInputStream
      */
     public void unmarshal(DataInputStream dataInputStream) throws IOException {
-        dataInputStream.readInt(); // skip over Message type integer
         this.hostname = readString(dataInputStream);
         this.ipAddress = readString(dataInputStream);
         this.port = dataInputStream.readInt();
@@ -203,41 +201,43 @@ public abstract class Message {
 
     /**
      * Reads a ChunkMetadata object from the DataInputStream as follows:
-     * 1. Reads the string absolute filepath
-     * 2. Reads the version number as an int
-     * 3. Reads the sequence number as an int
-     * 4. Reads the timestamp as a long, converts to Timestamp object
+     * 1. Reads the version number as an int
+     * 2. Reads the sequence number as an int
+     * 3. Reads the timestamp as a long, converts to Timestamp object
+     * 4. Reads the chunk size in bytes as an int
+     * 5. Reads the string absolute filepath
      * @param dataInputStream DataInputStream containing ChunkMetadata we are reading
      * @return A ChunkMetadata instance created from the above fields
      * @throws IOException If fails to read from DataInputStream
      */
     public static ChunkMetadata readChunkMetadata(DataInputStream dataInputStream) throws IOException {
-        String absoluteFilePath = readString(dataInputStream);
         int version = dataInputStream.readInt();
         int sequence = dataInputStream.readInt();
         long tsMillis = dataInputStream.readLong(); // read timestamp as long milliseconds since January 1, 1970, GMT
         Timestamp timestamp = new Timestamp(tsMillis);
         int sizeBytes = dataInputStream.readInt();
+        String absoluteFilePath = readString(dataInputStream);
         return new ChunkMetadata(absoluteFilePath, version, sequence, timestamp, sizeBytes);
     }
 
     /**
      * Writes a ChunkMetadata object to the DataOutputStream as follows:
-     * 1. Writes the file's absolute path as a string
-     * 2. Writes the chunk's version as an int
-     * 3. Writes the chunk's sequence number as an int
-     * 4. Writes the chunk's timestamp as a long
+     * 1. Writes the chunk's version as an int
+     * 2. Writes the chunk's sequence number as an int
+     * 3. Writes the chunk's timestamp as a long
+     * 4. Writes the chunk's size (in bytes) as an int
+     * 5. Writes the file's absolute path as a string
      * @param dataOutputStream DataOutputStream we are writing the ChunkMetadata object to
      * @param metadata ChunkMetadata instance
      * @throws IOException If fails to write to DataOutputStream
      */
     public static void writeChunkMetadata(DataOutputStream dataOutputStream, ChunkMetadata metadata) throws IOException {
-        writeString(dataOutputStream, metadata.getAbsoluteFilePath());
         dataOutputStream.writeInt(metadata.getVersion());
         dataOutputStream.writeInt(metadata.getSequence());
         long tsMillis = metadata.getTimestamp().getTime(); // get timestamp as milliseconds since January 1, 1970, GMT
         dataOutputStream.writeLong(tsMillis);
         dataOutputStream.writeInt(metadata.getSizeBytes());
+        writeString(dataOutputStream, metadata.getAbsoluteFilePath());
     }
 
     /**
