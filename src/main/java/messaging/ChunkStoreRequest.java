@@ -35,8 +35,8 @@ public class ChunkStoreRequest extends Message {
         this.chunkData = chunkData;
     }
 
-    public ChunkStoreRequest(byte[] marshaledBytes) {
-        this.marshaledBytes = marshaledBytes;
+    public ChunkStoreRequest(DataInputStream dataInputStream) throws IOException {
+        this.unmarshal(dataInputStream);
     }
 
     @Override

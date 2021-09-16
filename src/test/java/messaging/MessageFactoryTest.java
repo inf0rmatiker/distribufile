@@ -47,13 +47,11 @@ public class MessageFactoryTest {
             dataOutStream.close();
             byteOutStream.close();
 
-            Message createdMessage = messageFactory.createMessage(a.getMarshaledBytes());
-
             // Init test input stream
-            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(createdMessage.getMarshaledBytes());
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(a.getMarshaledBytes());
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
 
-            createdMessage.unmarshal(dataInputStream);
+            Message createdMessage = messageFactory.createMessage(dataInputStream);
 
             // Clean up input streams
             dataInputStream.close();

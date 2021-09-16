@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * A Message concrete class which functions as a response from the Controller to a Client's write request.
+ * A Message concrete class which functions as a response from the controller.Controller to a Client's write request.
  * It provides a list of Chunk Servers to write the chunk to.
  */
 public class ClientWriteResponse extends Message {
@@ -31,8 +31,8 @@ public class ClientWriteResponse extends Message {
         this.sequence = sequence;
     }
 
-    public ClientWriteResponse(byte[] marshaledBytes) {
-        this.marshaledBytes = marshaledBytes;
+    public ClientWriteResponse(DataInputStream dataInputStream) throws IOException {
+        this.unmarshal(dataInputStream);
     }
 
     @Override

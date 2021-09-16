@@ -5,13 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.Constants;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,18 +36,13 @@ public class Chunk {
 
     /**
      * Loads a chunk, along with its metadata and integrity information, from disk.
-     * @param absolutePath The absolute path of the chunk's parent file.
-     * @param sequence The sequence number of the chunk within the parent file.
+     * @param filename ChunkFilename of the chunk file we are trying to load
      * @return A fully-populated Chunk in-memory, along with its metadata and integrity information
      * @throws IOException If unable to read file.
      */
-    public static Chunk load(String absolutePath, Integer sequence) throws IOException {
+    public static Chunk load(ChunkFilename filename) throws IOException {
+        String chunkPath = filename.getChunkFilename();
 
-        /*
-          If the file name is /user/bob/experiment/SimFile.data, chunk 2 of this file will be stored by a chunk server
-          as /tmp/user/bob/experiment/SimFile.data_chunk2
-         */
-        String chunkPath = String.format("%s%s_chunk%d", getChunkDir(), absolutePath, sequence);
         log.info("Loading chunk from file \"{}\"", chunkPath);
         Path path = Paths.get(chunkPath);
         int storedChunkSize = (int) Files.size(path); // size of chunk in bytes including metadata/integrity information
@@ -94,20 +83,16 @@ public class Chunk {
     /**
      * Saves a chunk to disk, with its metadata and integrity information.
      * @param chunk The chunk we are saving to disk.
+     * @param filename ChunkFilename of the chunk file we are saving.
      * @throws IOException If unable to write to file.
      */
-    public static void save(Chunk chunk) throws IOException {
-        /*
-          If the file name is /user/bob/experiment/SimFile.data, chunk 2 of this file will be stored by a chunk server
-          as /tmp/user/bob/experiment/SimFile.data_chunk2
-         */
-        String chunkPath = String.format("%s%s_chunk%d", getChunkDir(), chunk.metadata.getAbsoluteFilePath(),
-                chunk.metadata.getSequence());
+    public static void save(Chunk chunk, ChunkFilename filename) throws IOException {
+        makeParentDirsIfNotExist(filename);
 
-        log.info("writing chunk to {}", chunkPath);
+        log.info("Writing chunk to {}", filename.getChunkFilename());
 
         // Initialize output streams for writing to file
-        FileOutputStream fileOutputStream = new FileOutputStream(chunkPath);
+        FileOutputStream fileOutputStream = new FileOutputStream(filename.getChunkFilename());
         DataOutputStream dataOutStream = new DataOutputStream(fileOutputStream);
 
         // Write chunk metadata, integrity information, and raw data to disk
@@ -119,6 +104,57 @@ public class Chunk {
         dataOutStream.flush();
         dataOutStream.close();
         fileOutputStream.close();
+    }
+
+    /**
+     * Updates a chunk file, overwriting its data/integrity information/metadata, and increments the version.
+     * @param chunk Chunk containing new data, metadata, and integrity information
+     * @param filename ChunkFilename components telling us where to read/write to
+     * @throws IOException If file not found or could not read/write
+     */
+    public static void update(Chunk chunk, ChunkFilename filename) throws IOException {
+        String chunkPath = filename.getChunkFilename();
+
+        // Read chunk version
+        FileInputStream fileInputStream = new FileInputStream(chunkPath);
+        DataInputStream dataInputStream = new DataInputStream(fileInputStream);
+        int chunkVersion = dataInputStream.readInt();
+        dataInputStream.close();
+        fileInputStream.close();
+        chunk.metadata.version = chunkVersion + 1; // set metadata version to read version + 1
+        log.info("Updating chunk version from {} to {}", chunkVersion, chunk.metadata.version);
+
+        // Overwrite the old chunk file with the new chunk, metadata, and integrity info
+        save(chunk, filename);
+    }
+
+    /**
+     * Creates all the parent directories for a chunk file, if they don't already exist or only partially exist
+     * @param filename The ChunkFilename object containing all the parts of the chunk's filename
+     * @throws IOException If:
+     * - unable to read/write to the directory specified
+     * - part of the path exists as a file, not a directory
+     */
+    public static void makeParentDirsIfNotExist(ChunkFilename filename) throws IOException {
+        File chunkFileDirectory = new File(filename.getChunkBase());
+        if (!chunkFileDirectory.exists()) {
+            if (!chunkFileDirectory.mkdirs()) {
+                throw new IOException("Unable to create directory " + filename.getChunkBase());
+            }
+        } else if (chunkFileDirectory.isFile()) {
+            throw new IOException(filename.getChunkBase() + " is a file");
+        }
+    }
+
+    /**
+     * Checks existence of chunk file
+     * @param filename ChunkFilename object
+     * @return True if chunk file exists, false otherwise
+     * @throws IOException If unable to read
+     */
+    public static Boolean alreadyExists(ChunkFilename filename) throws IOException {
+        File chunkFile = new File(filename.getChunkFilename());
+        return chunkFile.exists();
     }
 
     /**

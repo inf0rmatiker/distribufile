@@ -5,7 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 /**
- * A Message concrete class which should be targeted at the Controller to request a list of Chunk Servers
+ * A Message concrete class which should be targeted at the controller.Controller to request a list of Chunk Servers
  * to write a chunk to.
  */
 public class ClientWriteRequest extends Message {
@@ -21,8 +21,8 @@ public class ClientWriteRequest extends Message {
         this.sequence = sequence;
     }
 
-    public ClientWriteRequest(byte[] marshaledBytes) {
-        this.marshaledBytes = marshaledBytes;
+    public ClientWriteRequest(DataInputStream dataInputStream) throws IOException {
+        this.unmarshal(dataInputStream);
     }
 
     @Override

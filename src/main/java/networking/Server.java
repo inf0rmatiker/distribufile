@@ -4,82 +4,90 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import chunkserver.ChunkIntegrity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.CLI;
 import util.Constants;
 
-public class Server implements Runnable {
+/**
+ * Listens on a port and accepts incoming client connections to the ServerSocket, which generates a Socket object.
+ * Once a connection is received/accepted and its Socket has been captured, a Processor is spawned off as a Thread
+ * to process any incoming Message from the captured Socket, and we immediately return to listening for new connections.
+ */
+public abstract class Server implements Runnable {
 
-    private ServerSocket serverSocket;
+    public static Logger log = LoggerFactory.getLogger(Server.class);
 
-
-
-    // --- Constructors ---
-
-    public Server() {
-        this(Constants.DEFAULT_SERVER_PORT);
-    }
-
-    public Server(int port) {
-        try {
-            serverSocket = new ServerSocket(port, 10);
-        } catch (IOException e) {
-            System.out.println("Could not listen on port: " + port);
-            e.printStackTrace();
-        }
-    }
-
-    // --- Getters ---
+    public ServerSocket serverSocket;
+    public Integer port;
 
     public ServerSocket getServerSocket() {
         return serverSocket;
     }
 
-    // --- Public start method ---
+    public Integer getPort() {
+        return port;
+    }
 
     /**
-     * Starts the server. This method continues to listen for incoming client
-     * connections until the program is terminated.
-     * @Override
+     * Binds our ServerSocket to the specified port. If unable to bind, exits the program with error code 1.
+     * @param port Integer port to which we are attempting to bind.
      */
-    public void run() {
+    public void bindToPort(Integer port) {
+        try {
+            this.serverSocket = new ServerSocket(port, 10);
+        } catch (IOException e) {
+            log.error("Could not listen on port {}", port);
+            e.printStackTrace();
+        }
+
+        if (!this.serverSocket.isBound()) {
+            log.error("ServerSocket unable to bind to port {}", port);
+            System.exit(1);
+        }
+        log.info("ServerSocket successfully bound to port {}", port);
+        this.port = port;
+    }
+
+    /**
+     * Accepts client connections to ServerSocket in the form of a Socket, which is then passed to a new
+     * connection-handling thread. Finally, goes back to listening for more connections.
+     */
+    public void acceptConnections() {
         while (!serverSocket.isClosed()) {
+            try {
+                Socket clientSocket = serverSocket.accept(); // blocking call, waits for connection
+                log.info("Received client connection from host: {}, port: {}",
+                        clientSocket.getInetAddress().getHostName(), clientSocket.getPort());
 
-            try(Socket clientSocket = serverSocket.accept();
-                DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream())) {
-                System.out.println("🚀Server started🚀");
-                while (!clientSocket.isClosed()) {
-                    handleResponse(dataInputStream);
-                }
-
+                this.processConnection(clientSocket); // consume/process incoming message on new thread
             } catch (IOException e) {
                 System.out.println("Client disconnected.");
             }
         }
-
     }
-
-    // --- Private server utility methods ---
 
     /**
-     * 
-     * @param dataInputStream inputStream from client Socket
-     * @throws IOException when inputStream cannot read
-     * @VisibilityForTesting
+     * Helper function for launching our run() function as its own Thread.
      */
-    void handleResponse(DataInputStream dataInputStream) throws IOException {
-        System.out.println("Server received message: " + dataInputStream.readUTF());
+    public void launchAsThread() {
+        Thread server = new Thread(this, "Server Thread");
+        server.start();
     }
 
-    public static void main(String[] args) throws IOException {
-        Server server;
-        if (args.length != 1) {
-            String port = CLI.getServerPort(args)[0];
-            server = new Server(Integer.parseInt(port));    
-        }
-        else {
-            server = new Server();
-        }
-        server.run();
+    /**
+     * See class description; this is self-explanatory.
+     */
+    @Override
+    public void run() {
+        acceptConnections();
     }
+
+    /**
+     * Processes a captured Socket from an incoming connection. Implemented by a concrete subclass.
+     * @param clientSocket Socket captured from the incoming connection.
+     */
+    public abstract void processConnection(Socket clientSocket);
 
 }

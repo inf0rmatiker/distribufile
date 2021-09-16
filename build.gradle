@@ -31,24 +31,29 @@ repositories {
 dependencies {
 
     // Use JUnit test framework.
-    // testImplementation 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.2'
-
 
     // https://mvnrepository.com/artifact/gnu.getopt/java-getopt
     implementation group: 'gnu.getopt', name: 'java-getopt', version: '1.0.13'
 
+    // For logging
     implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.29'
 
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    // For logging
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.0-alpha5'
 
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
+    // For logging
     testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.0-alpha5'
 
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
+    // For encoding/decoding hex checksum strings
     implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
+
+    // For deleting an entire directory
+    testImplementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
 
 
 }
