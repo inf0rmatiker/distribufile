@@ -77,6 +77,19 @@ public abstract class Message {
     }
 
     /**
+     * Marshals all the fields of this object into the byte array field.
+     * @throws IOException If unable to write to the output stream
+     */
+    public void marshal() throws IOException {
+        ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+        DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+        marshal(dataOutStream);
+        collectByteStream(dataOutStream, byteOutStream);
+        dataOutStream.close();
+        byteOutStream.close();
+    }
+
+    /**
      * Unmarshals/unpacks the header fields from the message's byte array into the instance variables.
      * The message header is represented as follows:
      * - hostname length (int 4 bytes)

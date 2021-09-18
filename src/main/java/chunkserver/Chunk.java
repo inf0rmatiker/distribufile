@@ -87,9 +87,8 @@ public class Chunk {
      * @throws IOException If unable to write to file.
      */
     public static void save(Chunk chunk, ChunkFilename filename) throws IOException {
+        log.info("Writing chunk to {}", filename);
         makeParentDirsIfNotExist(filename);
-
-        log.info("Writing chunk to {}", filename.getChunkFilename());
 
         // Initialize output streams for writing to file
         FileOutputStream fileOutputStream = new FileOutputStream(filename.getChunkFilename());
@@ -104,6 +103,7 @@ public class Chunk {
         dataOutStream.flush();
         dataOutStream.close();
         fileOutputStream.close();
+        log.info("Successfully saved chunk {}", filename);
     }
 
     /**
@@ -126,6 +126,7 @@ public class Chunk {
 
         // Overwrite the old chunk file with the new chunk, metadata, and integrity info
         save(chunk, filename);
+        log.info("Successfully updated chunk {}", filename);
     }
 
     /**

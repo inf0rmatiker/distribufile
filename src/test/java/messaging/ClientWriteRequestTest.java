@@ -25,14 +25,7 @@ public class ClientWriteRequestTest {
                 testAbsolutePath, testSequence);
 
         try {
-            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
-            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
-            a.marshal(dataOutStream);
-            a.collectByteStream(dataOutStream, byteOutStream);
-
-            // Clean up output streams
-            dataOutStream.close();
-            byteOutStream.close();
+            a.marshal();
 
             // Init test input stream
             ByteArrayInputStream byteInputStream = new ByteArrayInputStream(a.getMarshaledBytes());
