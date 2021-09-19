@@ -2,8 +2,15 @@ package chunkserver;
 
 import util.Constants;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Stream;
 
 public class ChunkServer {
 
@@ -29,8 +36,21 @@ public class ChunkServer {
         return controllerPort;
     }
 
-    public void discoverChunks() {
-        // TODO: Traverse chunkDir and discover all chunk files
+    /**
+     * Recursively walks the chunk storage directory and returns a list of absolute paths of chunk files
+     * @return All chunk files' absolute paths
+     * @throws IOException If unable to read
+     */
+    public List<String> discoverChunks() throws IOException {
+        List<String> chunkFilenames = new ArrayList<>();
+        Stream<Path> paths = Files.walk(Paths.get(Chunk.getChunkDir()));
+        paths.filter(Files::isRegularFile).forEach(
+                file -> {
+                    String filename = file.toString();
+                    if (filename.contains("_chunk")) chunkFilenames.add(filename);
+                }
+        );
+        return chunkFilenames;
     }
 
     public void discoverFreeSpaceAvailable() {

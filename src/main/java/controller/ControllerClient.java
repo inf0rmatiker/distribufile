@@ -18,11 +18,11 @@ public class ControllerClient extends Client implements Runnable {
 
     @Override
     public void run() {
-
+        // TODO: Wait for response, then process it
     }
 
     @Override
     public void processResponse(Message message) {
-
+        // TODO: Process Message message
     }
 }
