@@ -16,7 +16,8 @@ public abstract class Message {
     Logger log = LoggerFactory.getLogger(Message.class);
 
     public enum MessageType {
-        HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST, CLIENT_WRITE_REQUEST, CLIENT_WRITE_RESPONSE
+        HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST, CLIENT_WRITE_REQUEST, CLIENT_WRITE_RESPONSE,
+        CHUNK_STORE_RESPONSE
     }
 
     public String hostname, ipAddress;
@@ -297,6 +298,7 @@ public abstract class Message {
             case 2: return MessageType.CHUNK_STORE_REQUEST;
             case 3: return MessageType.CLIENT_WRITE_REQUEST;
             case 4: return MessageType.CLIENT_WRITE_RESPONSE;
+            case 5: return MessageType.CHUNK_STORE_RESPONSE;
             default: return null;
         }
     }
@@ -307,12 +309,16 @@ public abstract class Message {
      * @return integer type
      */
     public static Integer integerFromType(MessageType type) {
+        if (type == null) {
+            throw new NullPointerException("MessageType cannot be null!");
+        }
         switch (type) {
             case HEARTBEAT_MINOR: return 0;
             case HEARTBEAT_MAJOR: return 1;
             case CHUNK_STORE_REQUEST: return 2;
             case CLIENT_WRITE_REQUEST: return 3;
             case CLIENT_WRITE_RESPONSE: return 4;
+            case CHUNK_STORE_RESPONSE: return 5;
             default: return -1;
         }
     }
