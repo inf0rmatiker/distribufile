@@ -26,7 +26,7 @@ public class Controller {
 
     public Controller() {
         init();
-        // startStartServer();
+        startServer();
     }
 
     /**
@@ -46,9 +46,9 @@ public class Controller {
         getAllFileMetadata();
     }
 
-    // public void startServer() {
-    //     new ControllerServer(this).launchAsThread();
-    // }
+    public void startServer() {
+        new ControllerServer(this).launchAsThread();
+    }
 
     // -- Getters --
 
