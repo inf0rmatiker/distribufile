@@ -32,9 +32,26 @@ public abstract class Processor implements Runnable {
         try {
             DataInputStream dataInputStream = new DataInputStream(this.socket.getInputStream());
             Message message = MessageFactory.getInstance().createMessage(dataInputStream);
-            processRequest(message);
+            process(message);
         } catch (IOException e) {
             log.error("Caught IOException!");
+        }
+    }
+
+    /**
+     * Sends a Message response on an already-established Socket connection.
+     * @param socket The Socket that has previously been established.
+     * @param message The Message containing the response.
+     */
+    public static void sendResponse(Socket socket, Message message) {
+        if (socket != null && socket.isConnected()) {
+            try {
+                socket.getOutputStream().write(message.getMarshaledBytes());
+            } catch (IOException e) {
+                log.error("Failed to send response Message {}: {}", message.getType(), e.getMessage());
+            }
+        } else {
+            log.warn("Socket is null or has been disconnected; aborting {} response", message.getType());
         }
     }
 
@@ -43,7 +60,7 @@ public abstract class Processor implements Runnable {
      * Abstract and implemented by a concrete subclass.
      * @param message Message received over the Socket.
      */
-    public abstract void processRequest(Message message);
+    public abstract void process(Message message);
 
     /**
      * Helper function for launching our run() function as its own Thread.

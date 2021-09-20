@@ -10,21 +10,13 @@ public class HostTest {
 
     @Test
     public void testGetHostIpAddress() {
-        try {
-            String ipAddress = Host.getIpAddress();
-            assertNotEquals("", ipAddress);
-        } catch (UnknownHostException e) {
-            fail("Caught UnknownHostException!");
-        }
+        String ipAddress = Host.getIpAddress();
+        assertNotEquals("", ipAddress);
     }
 
     @Test
     public void testGetHostHostname() {
-        try {
-            String hostname = Host.getHostname();
-            assertNotEquals("", hostname);
-        } catch (UnknownHostException e) {
-            fail("Caught UnknownHostException!");
-        }
+        String hostname = Host.getHostname();
+        assertNotEquals("", hostname);
     }
 }

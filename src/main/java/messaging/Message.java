@@ -13,7 +13,7 @@ import java.util.List;
 
 public abstract class Message {
 
-    Logger log = LoggerFactory.getLogger(Message.class);
+    public static Logger log = LoggerFactory.getLogger(Message.class);
 
     public enum MessageType {
         HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST, CLIENT_WRITE_REQUEST, CLIENT_WRITE_RESPONSE,
