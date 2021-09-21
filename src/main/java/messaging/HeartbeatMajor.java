@@ -25,6 +25,11 @@ public class HeartbeatMajor extends Heartbeat {
         this.totalChunksMaintained = totalChunksMaintained;
         this.freeSpaceAvailable = freeSpaceAvailable;
         this.chunksMetadata = chunksMetadata;
+        try {
+            marshal();
+        } catch (IOException e) {
+            log.error("Unable to self-marshal HeartbeatMajor: {}", e.getMessage());
+        }
     }
 
     public HeartbeatMajor(DataInputStream dataInputStream) throws IOException {

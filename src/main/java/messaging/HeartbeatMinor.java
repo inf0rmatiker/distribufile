@@ -27,6 +27,11 @@ public class HeartbeatMinor extends Heartbeat {
         this.freeSpaceAvailable = freeSpaceAvailable;
         this.newlyAddedChunks = newlyAddedChunks;
         this.corruptedFiles = corruptedFiles;
+        try {
+            marshal();
+        } catch (IOException e) {
+            log.error("Unable to self-marshal HeartbeatMinor: {}", e.getMessage());
+        }
     }
 
     public HeartbeatMinor(DataInputStream dataInputStream) throws IOException {

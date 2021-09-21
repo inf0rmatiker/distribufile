@@ -29,6 +29,11 @@ public class ClientWriteResponse extends Message {
         this.replicationChunkServers = replicationChunkServers;
         this.absoluteFilePath = absoluteFilePath;
         this.sequence = sequence;
+        try {
+            marshal();
+        } catch (IOException e) {
+            log.error("Unable to self-marshal ClientWriteResponse: {}", e.getMessage());
+        }
     }
 
     public ClientWriteResponse(DataInputStream dataInputStream) throws IOException {

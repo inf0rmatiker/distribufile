@@ -19,6 +19,11 @@ public class ClientWriteRequest extends Message {
         this.port = port;
         this.absoluteFilePath = absoluteFilePath;
         this.sequence = sequence;
+        try {
+            marshal();
+        } catch (IOException e) {
+            log.error("Unable to self-marshal ClientWriteRequest: {}", e.getMessage());
+        }
     }
 
     public ClientWriteRequest(DataInputStream dataInputStream) throws IOException {

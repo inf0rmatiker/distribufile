@@ -54,7 +54,6 @@ public class Main {
                 Integer testSequence = 0;
                 ChunkStoreRequest chunkStoreRequest = new ChunkStoreRequest(Host.getHostname(), Host.getIpAddress(), 0,
                         testReplicationChunkServers, testFile, testSequence, chunkData);
-                chunkStoreRequest.marshal();
                 log.info("Request:\n{}", chunkStoreRequest);
 
                 Socket clientSocket = Client.sendMessage("sole", Constants.CHUNK_SERVER_PORT, chunkStoreRequest);

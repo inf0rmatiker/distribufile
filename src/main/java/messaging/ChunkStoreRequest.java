@@ -31,6 +31,11 @@ public class ChunkStoreRequest extends Message {
         this.absoluteFilePath = absoluteFilePath;
         this.sequence = sequence;
         this.chunkData = chunkData;
+        try {
+            marshal();
+        } catch (IOException e) {
+            log.error("Unable to self-marshal ChunkStoreRequest: {}", e.getMessage());
+        }
     }
 
     public ChunkStoreRequest(DataInputStream dataInputStream) throws IOException {
