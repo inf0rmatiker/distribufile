@@ -100,6 +100,9 @@ public class ChunkServerProcessor extends Processor {
                 DataInputStream dataInputStream = new DataInputStream(forwardSocket.getInputStream());
                 response = MessageFactory.getInstance().createMessage(dataInputStream);
 
+                // Process the ChunkStoreResponse from upstream
+                process(response);
+
                 // Close our open socket with forward recipient; we are done talking with them
                 forwardSocket.close();
 
@@ -112,14 +115,14 @@ public class ChunkServerProcessor extends Processor {
                 return; // Fail fast, don't attempt to process upstream response
             }
 
-            // Process the ChunkStoreResponse from upstream
-            process(response);
+
         } else {
             log.info("We are the last recipient of the ChunkStoreRequest, no need to forward");
             response = new ChunkStoreResponse(Host.getHostname(), Host.getIpAddress(),
                     Constants.CHUNK_SERVER_PORT, message.getAbsoluteFilePath(), message.getSequence(), true);
 
             // If we've made it here, success; send successful ChunkStoreResponse Message
+            log.info("Sending ChunkStoreResponse SUCCESS back to {}: {}", message.getHostname(), response);
             sendResponse(this.socket, response);
         }
     }
@@ -133,13 +136,14 @@ public class ChunkServerProcessor extends Processor {
      */
     public void processChunkStoreResponse(ChunkStoreResponse message) {
         if (!message.getSuccess()) { // Just forward the same failure message back, so we can locate the failure
-            log.error("ChunkStoreResponse for file {}, chunk {} FAILURE from Chunk Server {}",
+            log.error("Forwarding back ChunkStoreResponse for file {}, chunk {} FAILURE from Chunk Server {}",
                     message.getAbsoluteFilePath(), message.getSequence(), message.getHostname());
             sendResponse(this.socket, message);
         } else { // Rebuild same success response message but with our hostname/IP
             ChunkStoreResponse ourResponse = new ChunkStoreResponse(Host.getHostname(), Host.getIpAddress(),
                     Constants.CHUNK_SERVER_PORT, message.getAbsoluteFilePath(), message.getSequence(),
                     message.getSuccess());
+            log.info("Sending SUCCESS back to {}: {}\"", this.socket.getInetAddress().getHostName(), message);
             sendResponse(this.socket, ourResponse);
         }
     }
