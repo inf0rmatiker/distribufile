@@ -1,5 +1,6 @@
 package controller;
 
+import messaging.HeartbeatMajor;
 import messaging.HeartbeatMinor;
 import messaging.Message;
 import networking.Processor;
@@ -27,9 +28,20 @@ public class ControllerProcessor extends Processor {
     public void process(Message message) {
         log.info("Processing message for ControllerProcessor");
 
-        switch(message.getType()) {
-            case CLIENT_WRITE_REQUEST: log.info("Received chunk store request"); break;
-            default: log.error("Invalid Message type");
+        switch (message.getType()) {
+            case CLIENT_WRITE_REQUEST:
+                log.info("Received chunk store request");
+                break;
+            case HEARTBEAT_MAJOR:
+                log.info("Received major heartbeat");
+                controller.processHeartbeatMajor((HeartbeatMajor) message);
+                break;
+            case HEARTBEAT_MINOR:
+                log.info("Received minor heartbeat");
+                controller.processHeartbeatMinor((HeartbeatMinor) message);
+                break;
+            default:
+                log.error("Invalid Message type");
         }
     }
 }
