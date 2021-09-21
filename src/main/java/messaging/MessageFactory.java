@@ -54,6 +54,7 @@ public class MessageFactory {
                 case CHUNK_STORE_REQUEST: return new ChunkStoreRequest(dataInputStream);
                 case CLIENT_WRITE_REQUEST: return new ClientWriteRequest(dataInputStream);
                 case CLIENT_WRITE_RESPONSE: return new ClientWriteResponse(dataInputStream);
+                case CHUNK_STORE_RESPONSE: return new ChunkStoreResponse(dataInputStream);
                 default: return null;
             }
         } else {
