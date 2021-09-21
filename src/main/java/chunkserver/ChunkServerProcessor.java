@@ -34,7 +34,7 @@ public class ChunkServerProcessor extends Processor {
     @Override
     public void process(Message message) {
         // TODO: Implement all possible Message request/response types for ChunkServer
-        log.info("Processing {} Message", message.getType());
+        log.info("Processing {} Message:\n{}", message.getType(), message);
 
 
         switch(message.getType()) {

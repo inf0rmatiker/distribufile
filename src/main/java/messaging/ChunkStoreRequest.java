@@ -115,4 +115,13 @@ public class ChunkStoreRequest extends Message {
                 Arrays.equals(this.chunkData, csrOther.getChunkData())
         );
     }
+
+    @Override
+    public String toString() {
+        return "> ChunkStoreRequest:" +
+                String.format("\n  replicationChunkServers: %s", this.replicationChunkServers) +
+                String.format("\n  absoluteFilePath: %s", this.absoluteFilePath) +
+                String.format("\n  sequence: %d", this.sequence) +
+                String.format("\n  chunkData: [ --- byte array of size %d --- ]", this.chunkData.length);
+    }
 }

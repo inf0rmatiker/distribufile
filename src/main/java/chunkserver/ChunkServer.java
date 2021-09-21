@@ -1,5 +1,8 @@
 package chunkserver;
 
+import networking.Processor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.Constants;
 
 import java.io.IOException;
@@ -13,6 +16,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Stream;
 
 public class ChunkServer {
+
+    public static Logger log = LoggerFactory.getLogger(ChunkServer.class);
 
     public LinkedBlockingQueue<ChunkMetadata> newlyAddedChunks;
     public String controllerHostname;
@@ -61,6 +66,7 @@ public class ChunkServer {
      * Starts the server as a thread for accepting incoming connections via Sockets
      */
     public void startServer() {
+        log.info("Starting Chunk Server...");
         new ChunkServerServer(this).launchAsThread();
     }
 
@@ -68,6 +74,7 @@ public class ChunkServer {
      * Starts the timer-based thread for sending HeartbeatMinor messages at regular intervals
      */
     public void startHeartbeatMinorTask() {
+        log.info("Starting Minor Heartbeat Task...");
         Timer heartbeatMinorDaemon = new Timer("HeartbeatMinorTask", true);
         heartbeatMinorDaemon.schedule(new HeartbeatMinorTask(this),
                 0, Constants.HEARTBEAT_MINOR_INTERVAL);
@@ -77,6 +84,7 @@ public class ChunkServer {
      * Starts the timer-based thread or sending HeartbeatMajor messages at regular intervals
      */
     public void startHeartbeatMajorTask() {
+        log.info("Starting Major Heartbeat Task...");
         Timer heartbeatMajorDaemon = new Timer("HeartbeatMajorTask", true);
         heartbeatMajorDaemon.schedule(new HeartbeatMajorTask(this),
                 Constants.HEARTBEAT_MAJOR_INTERVAL, Constants.HEARTBEAT_MAJOR_INTERVAL);

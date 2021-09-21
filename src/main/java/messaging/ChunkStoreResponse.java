@@ -86,4 +86,12 @@ public class ChunkStoreResponse extends Message {
                 this.success.equals(csrOther.getSuccess())
         );
     }
+
+    @Override
+    public String toString() {
+        return "ChunkStoreResponse:" +
+                String.format("\n  absoluteFilePath: %s", this.absoluteFilePath) +
+                String.format("\n  sequence: %d", this.sequence) +
+                String.format("\n  success: %b", this.success);
+    }
 }
