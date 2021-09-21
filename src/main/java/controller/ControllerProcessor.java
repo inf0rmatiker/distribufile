@@ -24,7 +24,7 @@ public class ControllerProcessor extends Processor {
     }
 
     @Override
-    public void processRequest(Message message) {
+    public void process(Message message) {
         log.info("Processing message for ControllerProcessor");
 
         switch(message.getType()) {

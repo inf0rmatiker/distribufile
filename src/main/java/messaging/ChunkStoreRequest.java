@@ -31,6 +31,11 @@ public class ChunkStoreRequest extends Message {
         this.absoluteFilePath = absoluteFilePath;
         this.sequence = sequence;
         this.chunkData = chunkData;
+        try {
+            marshal();
+        } catch (IOException e) {
+            log.error("Unable to self-marshal ChunkStoreRequest: {}", e.getMessage());
+        }
     }
 
     public ChunkStoreRequest(DataInputStream dataInputStream) throws IOException {
@@ -114,5 +119,14 @@ public class ChunkStoreRequest extends Message {
                 this.sequence.equals(csrOther.getSequence()) &&
                 Arrays.equals(this.chunkData, csrOther.getChunkData())
         );
+    }
+
+    @Override
+    public String toString() {
+        return "> ChunkStoreRequest:" +
+                String.format("\n  replicationChunkServers: %s", this.replicationChunkServers) +
+                String.format("\n  absoluteFilePath: %s", this.absoluteFilePath) +
+                String.format("\n  sequence: %d", this.sequence) +
+                String.format("\n  chunkData: [ --- byte array of size %d --- ]", this.chunkData.length);
     }
 }

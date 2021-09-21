@@ -25,8 +25,6 @@ public class ClientWriteRequestTest {
                 testAbsolutePath, testSequence);
 
         try {
-            a.marshal();
-
             // Init test input stream
             ByteArrayInputStream byteInputStream = new ByteArrayInputStream(a.getMarshaledBytes());
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));

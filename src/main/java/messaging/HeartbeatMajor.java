@@ -25,6 +25,11 @@ public class HeartbeatMajor extends Heartbeat {
         this.totalChunksMaintained = totalChunksMaintained;
         this.freeSpaceAvailable = freeSpaceAvailable;
         this.chunksMetadata = chunksMetadata;
+        try {
+            marshal();
+        } catch (IOException e) {
+            log.error("Unable to self-marshal HeartbeatMajor: {}", e.getMessage());
+        }
     }
 
     public HeartbeatMajor(DataInputStream dataInputStream) throws IOException {
@@ -79,5 +84,16 @@ public class HeartbeatMajor extends Heartbeat {
                 this.getFreeSpaceAvailable().equals(otherMessage.getFreeSpaceAvailable()) &&
                 this.getChunksMetadata().equals(otherMessage.getChunksMetadata())
         );
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("> HeartbeatMajor:");
+        sb.append(String.format("\n  totalChunksMaintained: %d", this.totalChunksMaintained));
+        sb.append(String.format("\n  freeSpaceAvailable: %d", this.freeSpaceAvailable));
+        for (ChunkMetadata cm: this.chunksMetadata) {
+            sb.append(String.format("\n%s", cm));
+        }
+        return sb.toString();
     }
 }

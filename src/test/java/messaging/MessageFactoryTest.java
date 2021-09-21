@@ -38,8 +38,6 @@ public class MessageFactoryTest {
                 testFreeSpaceAvailable, testNewlyAddedChunks, testCorruptedFiles);
 
         try {
-            a.marshal();
-
             // Init test input stream
             ByteArrayInputStream byteInputStream = new ByteArrayInputStream(a.getMarshaledBytes());
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));

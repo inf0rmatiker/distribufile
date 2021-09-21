@@ -31,10 +31,9 @@ public class HeartbeatMinorTask extends TimerTask {
         if (this.iteration % 10 != 0) {
             log.info("Iteration {} of HeartbeatMinorTask", this.iteration);
             HeartbeatMinor message = constructHeartbeatMinorMessage();
-            Client client = new ChunkServerClient(getChunkServer());
 
             try {
-                Socket clientSocket = client.sendMessage(
+                Socket clientSocket = Client.sendMessage(
                         getChunkServer().getControllerHostname(),
                         getChunkServer().getControllerPort(),
                         message

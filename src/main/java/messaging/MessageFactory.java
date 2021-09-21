@@ -1,5 +1,9 @@
 package messaging;
 
+import client.FileLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -10,6 +14,8 @@ import java.io.IOException;
  * from a byte array.
  */
 public class MessageFactory {
+
+    public static Logger log = LoggerFactory.getLogger(MessageFactory.class);
 
     private static MessageFactory singletonInstance = null;
 
@@ -37,6 +43,7 @@ public class MessageFactory {
      */
     public Message createMessage(DataInputStream dataInputStream) throws IOException {
         int integerType = dataInputStream.readInt();
+        log.info("createMessage(): Read integer {}", integerType);
 
         // Create concrete Message using type in byte message
         Message.MessageType type = Message.typeFromInteger(integerType);
@@ -47,6 +54,7 @@ public class MessageFactory {
                 case CHUNK_STORE_REQUEST: return new ChunkStoreRequest(dataInputStream);
                 case CLIENT_WRITE_REQUEST: return new ClientWriteRequest(dataInputStream);
                 case CLIENT_WRITE_RESPONSE: return new ClientWriteResponse(dataInputStream);
+                case CHUNK_STORE_RESPONSE: return new ChunkStoreResponse(dataInputStream);
                 default: return null;
             }
         } else {
