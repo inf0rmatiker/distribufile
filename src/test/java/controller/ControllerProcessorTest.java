@@ -42,7 +42,7 @@ public class ControllerProcessorTest {
         HeartbeatMajor heartbeatMajor = new HeartbeatMajor(testHostname, testIpAddr, testPort,
                 testTotalChunksMaintained, testFreeSpaceAvailable, chunksMetadata);
 
-        processor.processRequest(heartbeatMajor);
+        processor.process(heartbeatMajor);
     }
 
     @Test
@@ -61,7 +61,7 @@ public class ControllerProcessorTest {
         HeartbeatMinor heartbeatMinor = new HeartbeatMinor(testHostname, testIpAddr, testPort, testTotalChunks,
                 testFreeSpace, testNewChunks, testCorruptedFiles);
 
-        processor.processRequest(heartbeatMinor);
+        processor.process(heartbeatMinor);
     }
 
     @Test
@@ -79,7 +79,7 @@ public class ControllerProcessorTest {
         ChunkStoreRequest chunkStoreRequest = new ChunkStoreRequest(testHostname, testIpAddr, testPort,
                 replicationChunkServers, testAbsolutePath, testSequence, testChunkData);
 
-        processor.processRequest(chunkStoreRequest);
+        processor.process(chunkStoreRequest);
     }
 
 }
