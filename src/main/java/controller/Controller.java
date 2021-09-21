@@ -29,7 +29,7 @@ public class Controller {
     public Controller() {
         this.chunkServerMetadata = new Vector<ChunkServerMetadata>();
         this.filesMetadata = new Vector<FileMetadata>();
-        startServer();
+        // startServer();
 
     }
 
