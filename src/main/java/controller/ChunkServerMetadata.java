@@ -1,4 +1,4 @@
-package controller.dataStructures;
+package controller;
 
 import java.util.Vector;
 

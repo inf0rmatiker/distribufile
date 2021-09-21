@@ -1,9 +1,9 @@
-package controller.dataStructures;
+package controller;
 
 import org.junit.jupiter.api.Test;
 
 import chunkserver.ChunkMetadata;
-import controller.dataStructures.ChunkServerMetadata;
+import controller.ChunkServerMetadata;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

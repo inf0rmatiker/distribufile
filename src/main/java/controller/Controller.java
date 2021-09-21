@@ -1,36 +1,29 @@
 package controller;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import chunkserver.ChunkMetadata;
-import messaging.ClientWriteRequest;
-import messaging.Heartbeat;
 import messaging.HeartbeatMajor;
 import messaging.HeartbeatMinor;
-
-//Controllers "data structures"
-import controller.dataStructures.ChunkServerMetadata;
-import controller.dataStructures.FileMetadata;
 
 public class Controller {
 
     public static Logger log = LoggerFactory.getLogger(Controller.class);
 
-    private Vector<ChunkServerMetadata> chunkServerMetadata = null;
-    private Vector<FileMetadata> filesMetadata = null;
+    // CSM stands for Chunk Server Metadata
+    // FM stands for File Metadata
+    private ConcurrentHashMap<String, ChunkServerMetadata> controllerTrackedCSMs = null;
+    private ConcurrentHashMap<String, FileMetadata> controllerTrackedFMs = null;
 
     // -- Constructor --
 
     public Controller() {
-        this.chunkServerMetadata = new Vector<ChunkServerMetadata>();
-        this.filesMetadata = new Vector<FileMetadata>();
-        // startServer();
-
+        this.controllerTrackedCSMs = new ConcurrentHashMap<>();
+        this.controllerTrackedFMs = new ConcurrentHashMap<>();
     }
 
     public void startServer() {
@@ -42,19 +35,19 @@ public class Controller {
     /**
      * This method returns the metadata of all the chunk servers.
      * 
-     * @return Vector<ChunkServerMetadata>
+     * @return ConcurrentHashMap<String, ChunkServerMetadata>
      */
-    public Vector<ChunkServerMetadata> getChunkServerMetadata() {
-        return chunkServerMetadata;
+    public ConcurrentHashMap<String, ChunkServerMetadata> getChunkServerMetadata() {
+        return controllerTrackedCSMs;
     }
 
     /**
      * This method returns the metadata of all the files.
      * 
-     * @return Vector<FileMetadata>
+     * @return ConcurrentHashMap<String, FileMetadata>
      */
-    public Vector<FileMetadata> getFilesMetadata() {
-        return filesMetadata;
+    public ConcurrentHashMap<String, FileMetadata> getFilesMetadata() {
+        return controllerTrackedFMs;
     }
 
     // -- Specific Methods For Heartbeat Messages --
@@ -73,11 +66,11 @@ public class Controller {
         Integer totalChunksMaintained = heartbeat.getTotalChunksMaintained();
         Vector<ChunkMetadata> chunkMetadata = new Vector<>(heartbeat.getChunksMetadata());
 
-        ChunkServerMetadata chunkServerMetadataToCheck = new ChunkServerMetadata(heartbeat.getHostname(),
-                freeSpaceAvailable, totalChunksMaintained, chunkMetadata);
+        ChunkServerMetadata csmToCheck = new ChunkServerMetadata(heartbeat.getHostname(), freeSpaceAvailable,
+                totalChunksMaintained, chunkMetadata);
 
-        addOrUpdateChunkServerMetadata(chunkServerMetadataToCheck);
-        addOrUpdateFilesMetadata(chunkMetadata, chunkServerMetadataToCheck);
+        addOrUpdateChunkServerMetadata(csmToCheck);
+        addOrUpdateFilesMetadata(chunkMetadata, csmToCheck);
     }
 
     /**
@@ -92,24 +85,25 @@ public class Controller {
         Long freeSpaceAvailable = heartbeat.getFreeSpaceAvailable();
         Integer totalChunksMaintained = heartbeat.getTotalChunksMaintained();
 
-        ChunkServerMetadata chunkServerMetadataToCheck = new ChunkServerMetadata(heartbeat.getHostname(),
-                freeSpaceAvailable, totalChunksMaintained, null);
+        ChunkServerMetadata csmToCheck = new ChunkServerMetadata(heartbeat.getHostname(), freeSpaceAvailable,
+                totalChunksMaintained, null);
 
-        addOrUpdateChunkServerMetadata(chunkServerMetadataToCheck);
+        addOrUpdateChunkServerMetadata(csmToCheck);
     }
 
     /**
      * This method adds or updates a chunk server in the metadata.
-     * @param chunk
+     * 
+     * @param csmToCheck
      * @synchronized
      */
-    public synchronized void addOrUpdateChunkServerMetadata(ChunkServerMetadata chunk) {
-        if (!chunkServerMetadata.contains(chunk)) {
-            chunkServerMetadata.add(chunk);
-            log.info("Added chunk server: {}", chunk.hostname);
+    public synchronized void addOrUpdateChunkServerMetadata(ChunkServerMetadata csmToCheck) {
+        if (!controllerTrackedCSMs.containsKey(csmToCheck.hostname)) {
+            controllerTrackedCSMs.put(csmToCheck.hostname, csmToCheck);
+            log.info("Added chunk server: {}", csmToCheck.hostname);
         } else {
-            log.info("chunk server: {} already being tracked", chunk.hostname);
-            updateExistingChunkServerMetadata(chunk);
+            log.info("chunk server: {} already being tracked", csmToCheck.hostname);
+            updateExistingChunkServerMetadata(csmToCheck);
         }
     }
 
@@ -118,34 +112,37 @@ public class Controller {
      * metadata for a specific chunk server.
      * 
      * @synchronized
-     * @param chunkServerMetadata
+     * @param upToDateCSM
      */
-    public synchronized void updateExistingChunkServerMetadata(ChunkServerMetadata chunk) {
-        for (ChunkServerMetadata chunkServerMetadata : chunkServerMetadata) {
-            if (chunkServerMetadata.hostname.equals(chunk.hostname)) {
-                chunkServerMetadata.freeSpaceAvailable = chunk.freeSpaceAvailable;
-                if (chunk.chunkMetadata != null) {
-                    chunkServerMetadata.chunkMetadata = chunk.chunkMetadata;
-                }
-                chunkServerMetadata.totalChunksMaintained = chunk.totalChunksMaintained;
-                log.info("Updated chunk server: {}", chunkServerMetadata.hostname);
-            }
+    public synchronized void updateExistingChunkServerMetadata(ChunkServerMetadata upToDateCSM) {
+        ChunkServerMetadata csmToUpdate = controllerTrackedCSMs.get(upToDateCSM.hostname);
+
+        csmToUpdate.freeSpaceAvailable = upToDateCSM.freeSpaceAvailable;
+        csmToUpdate.totalChunksMaintained = upToDateCSM.totalChunksMaintained;
+        if (upToDateCSM.chunkMetadata != null) {
+            csmToUpdate.chunkMetadata = upToDateCSM.chunkMetadata;
         }
+
+        log.info("Updated chunk server: {}", csmToUpdate.hostname);
     }
 
     /**
      * This method adds or updates the metadata of a file.
-     * @param chunkMetadata
+     * 
+     * @param csmToCheck
      * @param heartbeatCSM
      */
-    public synchronized void addOrUpdateFilesMetadata(Vector<ChunkMetadata> chunkMetadata,
+    public synchronized void addOrUpdateFilesMetadata(Vector<ChunkMetadata> csmToCheck,
             ChunkServerMetadata heartbeatCSM) {
-        for (ChunkMetadata currentChunkMetadata : chunkMetadata) {
-            if (!filesMetadata.contains(currentChunkMetadata.getAbsoluteFilePath())) {
-                addNewFileMetadata(currentChunkMetadata, heartbeatCSM);
-                log.info("Added file: {}", currentChunkMetadata.getAbsoluteFilePath());
+
+        for (ChunkMetadata currChunkMetadata : csmToCheck) {
+            String absolutePathToCheck = currChunkMetadata.getAbsoluteFilePath();
+
+            if (!controllerTrackedFMs.containsKey(absolutePathToCheck)) {
+                addNewFileMetadata(currChunkMetadata, heartbeatCSM);
+                log.info("Added file: {}", absolutePathToCheck);
             } else {
-                log.info("file: {} already being tracked", currentChunkMetadata.getAbsoluteFilePath());
+                log.info("file: {} already being tracked", absolutePathToCheck);
             }
         }
 
@@ -155,12 +152,26 @@ public class Controller {
      * This is a helper method to addOrUpdateFilesMetaData. This method will add
      * blank vectors to a files chunksSever if the incoming sequence number is not
      * in order. Then it adds it to the chunksServer at that sequence.
+     * 
      * @param chunkMetadata
      * @param heartbeatCSM
      */
     public synchronized void addNewFileMetadata(ChunkMetadata chunkMetadata, ChunkServerMetadata heartbeatCSM) {
+        String absolutePath = chunkMetadata.getAbsoluteFilePath();
         FileMetadata newFileMetadata = new FileMetadata(chunkMetadata.getAbsoluteFilePath());
-        filesMetadata.add(newFileMetadata);
+        controllerTrackedFMs.put(absolutePath, newFileMetadata);
+        fillFilesChunkServerMetadata(newFileMetadata, chunkMetadata, heartbeatCSM);
+    }
+
+    /**
+     * This method fills a new file metadata with the chunk server metadata.
+     * 
+     * @param newFileMetadata
+     * @param chunkMetadata
+     * @param heartbeatCSM
+     */
+    public synchronized void fillFilesChunkServerMetadata(FileMetadata newFileMetadata, ChunkMetadata chunkMetadata,
+            ChunkServerMetadata heartbeatCSM) {
         Integer sequence = chunkMetadata.getSequence();
 
         if (sequence > newFileMetadata.chunksServers.size()) {
