@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import chunkserver.ChunkMetadata;
+import messaging.ClientWriteRequest;
 import messaging.Heartbeat;
 import messaging.HeartbeatMajor;
 import messaging.HeartbeatMinor;
@@ -56,114 +57,119 @@ public class Controller {
         return filesMetadata;
     }
 
-    // -- Methods For Adding and Removing --
+    // -- Specific Methods For Heartbeat Messages --
+    // Adds and updates the metadata for chunk servers and files.
 
     /**
-     * This method adds a new initialized chunk server to the metadata.
+     * this methods uses the heartbeat message to update the metadata of a chunk
+     * server, or updates an existing chunk server. This contains all of the data
+     * has all of the chunk server data.
      * 
-     * @param chunkServerMetadata
+     * @param heartbeat
      * @synchronized
      */
-    public synchronized void addChunkServer(ChunkServerMetadata chunkServerMetadata) {
-        this.chunkServerMetadata.add(chunkServerMetadata);
-    }
-
-    /**
-     * This method adds a new file to the metadata.
-     * 
-     * @param fileMetadata
-     */
-    public synchronized void addFile(FileMetadata fileMetadata) {
-        this.filesMetadata.add(fileMetadata);
-    }
-
-    /**
-     * This method removes a chunk server from the metadata.
-     * 
-     * @param chunkServerMetadata
-     * @synchronized
-     */
-    public synchronized void removeChunkServerMetadata(ChunkServerMetadata chunkServerMetadata) {
-        this.chunkServerMetadata.remove(chunkServerMetadata);
-    }
-
-    /**
-     * This method removes a file from the metadata.
-     * 
-     * @param fileMetadata
-     * @synchronized
-     */
-    public synchronized void removeFileMetadata(FileMetadata fileMetadata) {
-        this.filesMetadata.remove(fileMetadata);
-    }
-
-    // -- Specific Methods --
-
     public synchronized void processHeartbeatMajor(HeartbeatMajor heartbeat) {
-
-        try (ByteArrayInputStream byteInputStream = new ByteArrayInputStream(heartbeat.getMarshaledBytes());
-                DataInputStream dataInputStream = new DataInputStream(byteInputStream);) {
-            dataInputStream.readInt(); // skip byte
-        } catch (IOException e) {
-            log.error("Error reading heartbeat major", e);
-        }
-
         Long freeSpaceAvailable = heartbeat.getFreeSpaceAvailable();
         Integer totalChunksMaintained = heartbeat.getTotalChunksMaintained();
         Vector<ChunkMetadata> chunkMetadata = new Vector<>(heartbeat.getChunksMetadata());
 
         ChunkServerMetadata chunkServerMetadataToCheck = new ChunkServerMetadata(heartbeat.getHostname(),
-                heartbeat.getPort(), freeSpaceAvailable, totalChunksMaintained, chunkMetadata);
+                freeSpaceAvailable, totalChunksMaintained, chunkMetadata);
 
         addOrUpdateChunkServerMetadata(chunkServerMetadataToCheck);
+        addOrUpdateFilesMetadata(chunkMetadata, chunkServerMetadataToCheck);
     }
 
+    /**
+     * this methods uses the heartbeat message to update the metadata of a chunk
+     * server, or updates an existing chunk server. This contains only the hostname,
+     * port, freeSpaceAvailable, and totalChunksMaintained.
+     * 
+     * @param heartbeat
+     * @synchronized
+     */
     public synchronized void processHeartbeatMinor(HeartbeatMinor heartbeat) {
-
-        try (ByteArrayInputStream byteInputStream = new ByteArrayInputStream(heartbeat.getMarshaledBytes());
-                DataInputStream dataInputStream = new DataInputStream(byteInputStream);) {
-            dataInputStream.readInt(); // skip byte
-        } catch (IOException e) {
-            log.error("Error reading heartbeat minor", e);
-        }
-
         Long freeSpaceAvailable = heartbeat.getFreeSpaceAvailable();
-        Integer totalChunksMaintained = heartbeat.getTotalChunksMaintained(); 
-        
+        Integer totalChunksMaintained = heartbeat.getTotalChunksMaintained();
+
         ChunkServerMetadata chunkServerMetadataToCheck = new ChunkServerMetadata(heartbeat.getHostname(),
-                heartbeat.getPort(), freeSpaceAvailable, totalChunksMaintained, null);
-        
+                freeSpaceAvailable, totalChunksMaintained, null);
+
         addOrUpdateChunkServerMetadata(chunkServerMetadataToCheck);
     }
 
+    /**
+     * This method adds or updates a chunk server in the metadata.
+     * @param chunk
+     * @synchronized
+     */
     public synchronized void addOrUpdateChunkServerMetadata(ChunkServerMetadata chunk) {
         if (!chunkServerMetadata.contains(chunk)) {
             chunkServerMetadata.add(chunk);
-            log.info("Added chunk server: {}:{}", chunk.hostname, chunk.port);
+            log.info("Added chunk server: {}", chunk.hostname);
         } else {
-            log.info("chunk server already being tracked");
+            log.info("chunk server: {} already being tracked", chunk.hostname);
             updateExistingChunkServerMetadata(chunk);
         }
     }
 
     /**
-     * This method updates the free space available and metadata for a specific
-     * chunk server.
+     * This method updates the free space available, total chunks maintained and
+     * metadata for a specific chunk server.
      * 
      * @synchronized
      * @param chunkServerMetadata
      */
     public synchronized void updateExistingChunkServerMetadata(ChunkServerMetadata chunk) {
         for (ChunkServerMetadata chunkServerMetadata : chunkServerMetadata) {
-            if (chunkServerMetadata.hostname.equals(chunk.hostname) && chunkServerMetadata.port == chunk.port) {
+            if (chunkServerMetadata.hostname.equals(chunk.hostname)) {
                 chunkServerMetadata.freeSpaceAvailable = chunk.freeSpaceAvailable;
                 if (chunk.chunkMetadata != null) {
                     chunkServerMetadata.chunkMetadata = chunk.chunkMetadata;
                 }
                 chunkServerMetadata.totalChunksMaintained = chunk.totalChunksMaintained;
-                log.info("Updated chunk server: {}:{}", chunkServerMetadata.hostname, chunkServerMetadata.port);
+                log.info("Updated chunk server: {}", chunkServerMetadata.hostname);
             }
         }
+    }
+
+    /**
+     * This method adds or updates the metadata of a file.
+     * @param chunkMetadata
+     * @param heartbeatCSM
+     */
+    public synchronized void addOrUpdateFilesMetadata(Vector<ChunkMetadata> chunkMetadata,
+            ChunkServerMetadata heartbeatCSM) {
+        for (ChunkMetadata currentChunkMetadata : chunkMetadata) {
+            if (!filesMetadata.contains(currentChunkMetadata.getAbsoluteFilePath())) {
+                addNewFileMetadata(currentChunkMetadata, heartbeatCSM);
+                log.info("Added file: {}", currentChunkMetadata.getAbsoluteFilePath());
+            } else {
+                log.info("file: {} already being tracked", currentChunkMetadata.getAbsoluteFilePath());
+            }
+        }
+
+    }
+
+    /**
+     * This is a helper method to addOrUpdateFilesMetaData. This method will add
+     * blank vectors to a files chunksSever if the incoming sequence number is not
+     * in order. Then it adds it to the chunksServer at that sequence.
+     * @param chunkMetadata
+     * @param heartbeatCSM
+     */
+    public synchronized void addNewFileMetadata(ChunkMetadata chunkMetadata, ChunkServerMetadata heartbeatCSM) {
+        FileMetadata newFileMetadata = new FileMetadata(chunkMetadata.getAbsoluteFilePath());
+        filesMetadata.add(newFileMetadata);
+        Integer sequence = chunkMetadata.getSequence();
+
+        if (sequence > newFileMetadata.chunksServers.size()) {
+            for (int i = newFileMetadata.chunksServers.size(); i < sequence; i++) {
+                newFileMetadata.chunksServers.add(new Vector<>());
+            }
+        }
+
+        newFileMetadata.chunksServers.get(sequence).add(heartbeatCSM);
     }
 
 }
