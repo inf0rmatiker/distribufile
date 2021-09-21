@@ -29,14 +29,14 @@ public class HeartbeatMajorTask extends TimerTask {
     public void run() {
         log.info("Iteration {} of HeartbeatMajorTask", this.iteration);
         HeartbeatMajor message = constructHeartbeatMajorMessage();
-        Client client = new ChunkServerClient(getChunkServer());
 
         try {
-            Socket clientSocket = client.sendMessage(
+            Socket clientSocket = Client.sendMessage(
                     getChunkServer().getControllerHostname(),
                     getChunkServer().getControllerPort(),
                     message
             );
+
             clientSocket.close();
         } catch (IOException e) {
             log.error("Caught IOException while trying to send HeartbeatMajor Message!");
