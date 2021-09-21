@@ -164,7 +164,7 @@ public class Controller {
         Integer sequence = chunkMetadata.getSequence();
 
         if (sequence > newFileMetadata.chunksServers.size()) {
-            for (int i = newFileMetadata.chunksServers.size(); i < sequence; i++) {
+            for (int i = newFileMetadata.chunksServers.size(); i <= sequence; i++) {
                 newFileMetadata.chunksServers.add(new Vector<>());
             }
         }

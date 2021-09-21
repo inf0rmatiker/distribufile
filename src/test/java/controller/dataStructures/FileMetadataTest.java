@@ -1,4 +1,4 @@
-package controller;
+package controller.dataStructures;
 
 import org.junit.jupiter.api.Test;
 
