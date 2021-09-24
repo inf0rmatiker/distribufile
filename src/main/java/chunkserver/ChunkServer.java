@@ -109,7 +109,7 @@ public class ChunkServer {
         log.info("Starting Major Heartbeat Task...");
         Timer heartbeatMajorDaemon = new Timer("HeartbeatMajorTask", true);
         heartbeatMajorDaemon.schedule(new HeartbeatMajorTask(this),
-                Constants.HEARTBEAT_MAJOR_INTERVAL, Constants.HEARTBEAT_MAJOR_INTERVAL);
+                0, Constants.HEARTBEAT_MAJOR_INTERVAL);
     }
 
 }
