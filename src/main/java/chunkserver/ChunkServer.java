@@ -6,9 +6,8 @@ import util.Constants;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -47,17 +46,51 @@ public class ChunkServer {
      */
     public synchronized List<String> discoverChunks() {
         List<String> chunkFilenames = new ArrayList<>();
+
         try {
-            Files.walk(Paths.get(Chunk.getChunkDir()))
-                    .filter(Files::isReadable)
-                    .filter(Files::isRegularFile)
-                    .forEach( file -> {
-                        String filename = file.toString();
-                        if (filename.contains("_chunk")) chunkFilenames.add(filename);
-                    });
+            Files.walkFileTree(Paths.get(Chunk.getChunkDir()), new SimpleFileVisitor<Path>() {
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    chunkFilenames.add(file.toString());
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+                    if (e == null) {
+                        return FileVisitResult.CONTINUE;
+                    } else {
+                        // directory iteration failed
+                        throw e;
+                    }
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path dir, IOException e) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+
+            });
+
         } catch (IOException e) {
-            log.error("Unable to walk directory {} to discover chunks! {}", Chunk.getChunkDir(), e.getMessage());
+            log.error("Caught IOException while walking directory tree! {}", e.getMessage());
         }
+
+
+//        try {
+//            Stream<Path> paths = Files.walk(Paths.get(Chunk.getChunkDir()))
+//                    .filter(Files::isReadable)
+//                    .filter(Files::isRegularFile);
+//
+//
+//                    .forEach( file -> {
+//                        String filename = file.toString();
+//                        if (filename.contains("_chunk")) chunkFilenames.add(filename);
+//                    });
+//        } catch (IOException e) {
+//            log.error("Unable to walk directory {} to discover chunks! {}", Chunk.getChunkDir(), e.getMessage());
+//        }
         return chunkFilenames;
     }
 
