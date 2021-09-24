@@ -28,9 +28,13 @@ public class HeartbeatMonitor extends TimerTask {
     public void run() {
         for (ChunkServerMetadata chunkServer: getController().getChunkServerMetadata().values()) {
             if (chunkServer.isExpired()) {
-                log.warn("Chunk Server {} has failed to send any heartbeat messages within interval, expiring it",
+                log.warn("Chunk Server {} has failed to send any heartbeat messages within interval; expiring it",
                         chunkServer.getHostname());
             }
         }
+    }
+
+    public void expireChunkServer() {
+        // TODO: Remove from list, redistribute the chunks it had
     }
 }

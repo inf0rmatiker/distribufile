@@ -69,10 +69,8 @@ public class Controller {
             old.freeSpaceAvailable = csm.getFreeSpaceAvailable();
             old.totalChunksMaintained = csm.getTotalChunksMaintained();
             old.chunkMetadata.addAll(csm.getChunkMetadata());
-            log.info("Updated Chunk Server \"{}\" metadata", csm.getHostname());
         } else {
             this.trackedChunkServerMetadata.put(csm.getHostname(), csm);
-            log.info("Added Chunk Server metadata: {}", csm);
         }
     }
 
@@ -85,8 +83,6 @@ public class Controller {
         ChunkServerMetadata prev = this.trackedChunkServerMetadata.put(csm.getHostname(), csm);
         if (prev == null) {
             log.info("Added Chunk Server metadata: {}", csm);
-        } else {
-            log.info("Replaced Chunk Server \"{}\" metadata", csm.getHostname());
         }
     }
 
