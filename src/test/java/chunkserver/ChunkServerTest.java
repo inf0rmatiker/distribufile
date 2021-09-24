@@ -22,12 +22,8 @@ public class ChunkServerTest {
     public void testDiscoverChunksNoChunks() {
         Chunk.setChunkDir(getTestResourcesPath());
         ChunkServer chunkServer = new ChunkServer("localhost", 9000);
-        try {
-            List<String> actual = chunkServer.discoverChunks();
-            assertTrue(actual.isEmpty());
-        } catch (IOException e) {
-            fail("Caught IOException!");
-        }
+        List<String> actual = chunkServer.discoverChunks();
+        assertTrue(actual.isEmpty());
     }
 
     @Test
