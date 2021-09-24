@@ -63,12 +63,20 @@ public class ChunkServer {
                 }
 
                 @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (attrs.isDirectory() && !Files.isReadable(dir)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    } else {
+                        return FileVisitResult.CONTINUE;
+                    }
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException e) {
                     if (e == null) {
                         return FileVisitResult.CONTINUE;
                     } else {
-                        // directory iteration failed
-                        throw e;
+                        return FileVisitResult.SKIP_SUBTREE;
                     }
                 }
 
