@@ -44,7 +44,7 @@ public class HeartbeatMajorTask extends TimerTask {
 
                 clientSocket.close();
             } catch (IOException e) {
-                log.error("Caught IOException while trying to send HeartbeatMajor Message!");
+                log.error("Caught IOException while trying to send HeartbeatMajor Message: {}", e.getMessage());
             }
 
         } catch (IOException e) {
