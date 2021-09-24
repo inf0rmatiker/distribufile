@@ -53,7 +53,7 @@ public class FileLoader {
             chunk = resizedChunk;
         }
 
-        log.info("Read chunk of size {} bytes\n", chunk.length);
+        log.info("Read chunk of size {} bytes", chunk.length);
         return chunk;
     }
 

@@ -80,11 +80,16 @@ public class ChunkServerMetadata {
         sb.append(String.format("  hostname: %s\n", this.hostname));
         sb.append(String.format("  freeSpaceAvailable: %d\n", this.freeSpaceAvailable));
         sb.append(String.format("  totalChunksMaintained: %d\n", this.totalChunksMaintained));
-        sb.append("  chunkMetadata: [\n");
-        for (ChunkMetadata cm: this.chunkMetadata) {
-            sb.append(cm);
+        if (this.chunkMetadata.isEmpty()) {
+            sb.append("  chunkMetadata: [ ]\n");
+        } else {
+            sb.append("  chunkMetadata: [\n");
+            for (ChunkMetadata cm: this.chunkMetadata) {
+                sb.append(cm);
+            }
+            sb.append("  ]\n");
         }
-        sb.append("  ]\n");
+
         return sb.toString();
     }
 }

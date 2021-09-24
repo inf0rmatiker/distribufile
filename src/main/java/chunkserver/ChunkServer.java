@@ -44,17 +44,20 @@ public class ChunkServer {
     /**
      * Recursively walks the chunk storage directory and returns a list of absolute paths of chunk files
      * @return All chunk files' absolute paths
-     * @throws IOException If unable to read
      */
-    public synchronized List<String> discoverChunks() throws IOException {
+    public synchronized List<String> discoverChunks() {
         List<String> chunkFilenames = new ArrayList<>();
-        Stream<Path> paths = Files.walk(Paths.get(Chunk.getChunkDir()));
-        paths.filter(Files::isRegularFile).forEach(
-                file -> {
-                    String filename = file.toString();
-                    if (filename.contains("_chunk")) chunkFilenames.add(filename);
-                }
-        );
+        try {
+            Files.walk(Paths.get(Chunk.getChunkDir()))
+                    .filter(Files::isReadable)
+                    .filter(Files::isRegularFile)
+                    .forEach( file -> {
+                        String filename = file.toString();
+                        if (filename.contains("_chunk")) chunkFilenames.add(filename);
+                    });
+        } catch (IOException e) {
+            log.error("Unable to walk directory {} to discover chunks! {}", Chunk.getChunkDir(), e.getMessage());
+        }
         return chunkFilenames;
     }
 

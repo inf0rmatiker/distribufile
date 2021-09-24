@@ -103,7 +103,6 @@ public class HeartbeatMinorTest {
 
             // Create a new Message from a's marshaled bytes
             HeartbeatMinor b = new HeartbeatMinor(dataInputStream);
-            System.out.println(b.toString());
 
             // Clean up input streams
             dataInputStream.close();
