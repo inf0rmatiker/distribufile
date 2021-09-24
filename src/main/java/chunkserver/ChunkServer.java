@@ -47,12 +47,18 @@ public class ChunkServer {
     public synchronized List<String> discoverChunks() {
         List<String> chunkFilenames = new ArrayList<>();
 
+        // Apparently this is how you have to implement a walker that skips directories it can't read
         try {
             Files.walkFileTree(Paths.get(Chunk.getChunkDir()), new SimpleFileVisitor<Path>() {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    chunkFilenames.add(file.toString());
+                    if (attrs.isRegularFile()) {
+                        String filename = file.toString();
+                        if (filename.contains("_chunk")) {
+                            chunkFilenames.add(file.toString());
+                        }
+                    }
                     return FileVisitResult.CONTINUE;
                 }
 
@@ -70,27 +76,11 @@ public class ChunkServer {
                 public FileVisitResult visitFileFailed(Path dir, IOException e) {
                     return FileVisitResult.SKIP_SUBTREE;
                 }
-
             });
 
         } catch (IOException e) {
             log.error("Caught IOException while walking directory tree! {}", e.getMessage());
         }
-
-
-//        try {
-//            Stream<Path> paths = Files.walk(Paths.get(Chunk.getChunkDir()))
-//                    .filter(Files::isReadable)
-//                    .filter(Files::isRegularFile);
-//
-//
-//                    .forEach( file -> {
-//                        String filename = file.toString();
-//                        if (filename.contains("_chunk")) chunkFilenames.add(filename);
-//                    });
-//        } catch (IOException e) {
-//            log.error("Unable to walk directory {} to discover chunks! {}", Chunk.getChunkDir(), e.getMessage());
-//        }
         return chunkFilenames;
     }
 
