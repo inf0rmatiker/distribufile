@@ -68,7 +68,7 @@ test {
 }
 
 jar {
-    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA','META-INF/LICENSE.txt'
     archiveClassifier = 'uber'
 
     from sourceSets.main.output
