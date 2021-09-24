@@ -33,11 +33,17 @@ public class Main {
 
             case "--chunkserver":
 
-                ChunkServer chunkServer = new ChunkServer("localhost", Constants.CONTROLLER_PORT);
-                chunkServer.startServer();
-                chunkServer.startHeartbeatMinorTask();
-                chunkServer.startHeartbeatMajorTask();
-                break;
+                if (args[1].contains("--controller=")) {
+                    String controllerHostname = args[1].trim().replaceFirst("--controller=", "");
+                    ChunkServer chunkServer = new ChunkServer(controllerHostname, Constants.CONTROLLER_PORT);
+                    chunkServer.startServer();
+                    chunkServer.startHeartbeatMinorTask();
+                    chunkServer.startHeartbeatMajorTask();
+                    break;
+                } else {
+                    log.warn("Usage: Main --chunkserver --controller=<hostname>");
+                    System.exit(1);
+                }
 
             case "--controller":
 
