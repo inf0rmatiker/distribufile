@@ -1,10 +1,10 @@
 package chunkserver;
 
-import networking.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.Constants;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,7 +46,7 @@ public class ChunkServer {
      * @return All chunk files' absolute paths
      * @throws IOException If unable to read
      */
-    public List<String> discoverChunks() throws IOException {
+    public synchronized List<String> discoverChunks() throws IOException {
         List<String> chunkFilenames = new ArrayList<>();
         Stream<Path> paths = Files.walk(Paths.get(Chunk.getChunkDir()));
         paths.filter(Files::isRegularFile).forEach(
@@ -58,8 +58,27 @@ public class ChunkServer {
         return chunkFilenames;
     }
 
-    public void discoverFreeSpaceAvailable() {
-        // TODO: Use system command (df -Th | grep /tmp) to discover available space
+    /**
+     * Reads all the stored chunk files for their metadata, returning as a list
+     * @return List of ChunkMetadata objects, one for each stored chunk file
+     * @throws IOException If unable to read any of the files
+     */
+    public synchronized List<ChunkMetadata> discoverChunksMetadata() throws IOException {
+        List<ChunkMetadata> chunkMetadataList = new ArrayList<>();
+        List<String> chunkFiles = discoverChunks();
+        for (String filename: chunkFiles) {
+            ChunkFilename chunkFilename = new ChunkFilename(filename, Chunk.getChunkDir());
+            chunkMetadataList.add(Chunk.readChunkMetadata(chunkFilename));
+        }
+        return chunkMetadataList;
+    }
+
+    /**
+     * Gets the free space, in bytes, available at the chunk storage directory.
+     * @return Long free bytes available
+     */
+    public synchronized Long discoverFreeSpaceAvailable() {
+        return new File(Chunk.getChunkDir()).getFreeSpace();
     }
 
     /**

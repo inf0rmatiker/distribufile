@@ -1,5 +1,6 @@
 package messaging;
 
+import chunkserver.ChunkMetadata;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedInputStream;
@@ -9,6 +10,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -32,10 +35,10 @@ public class MessageFactoryTest {
         int testPort = 9001;
         int testTotalChunksMaintained = 0;
         long testFreeSpaceAvailable = 0L;
-        String[] testNewlyAddedChunks = new String[]{"test chunk 1", "test chunk 5"};
-        String[] testCorruptedFiles = new String[]{"test file 3", "test file 7"};
+        List<ChunkMetadata> testNewChunks = new ArrayList<>();
+        List<ChunkMetadata> testCorruptedFiles = new ArrayList<>();
         HeartbeatMinor a = new HeartbeatMinor(testHostname, testIpAddr, testPort, testTotalChunksMaintained,
-                testFreeSpaceAvailable, testNewlyAddedChunks, testCorruptedFiles);
+                testFreeSpaceAvailable, testNewChunks, testCorruptedFiles);
 
         try {
             // Init test input stream

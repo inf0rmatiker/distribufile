@@ -1,5 +1,6 @@
 package controller;
 
+import chunkserver.ChunkMetadata;
 import messaging.HeartbeatMajor;
 import messaging.HeartbeatMinor;
 import messaging.Message;
@@ -8,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.Socket;
+import java.util.Vector;
 
 public class ControllerProcessor extends Processor {
 
@@ -26,22 +28,47 @@ public class ControllerProcessor extends Processor {
 
     @Override
     public void process(Message message) {
-        log.info("Processing message for ControllerProcessor");
+        // TODO: Implement all possible Message request/response types for Controller
+        log.info("Processing {} Message:\n{}", message.getType(), message);
 
         switch (message.getType()) {
             case CLIENT_WRITE_REQUEST:
-                log.info("Received chunk store request");
+                // TODO: Implement
                 break;
             case HEARTBEAT_MAJOR:
-                log.info("Received major heartbeat");
-                controller.processHeartbeatMajor((HeartbeatMajor) message);
+                processHeartbeatMajor((HeartbeatMajor) message);
                 break;
             case HEARTBEAT_MINOR:
-                log.info("Received minor heartbeat");
-                controller.processHeartbeatMinor((HeartbeatMinor) message);
+                processHeartbeatMinor((HeartbeatMinor) message);
                 break;
             default:
-                log.error("Invalid Message type");
+                log.error("Unimplemented Message type \"{}\"", message.getType());
         }
+    }
+
+    /**
+     * Uses the HeartbeatMajor Message to replace the metadata of a Chunk Server with fresh metadata
+     * @param message HeartbeatMajor Message containing metadata about a Chunk Server
+     */
+    public void processHeartbeatMajor(HeartbeatMajor message) {
+        Vector<ChunkMetadata> chunkMetadata = new Vector<>(message.getChunksMetadata()); // copy into Vector
+        ChunkServerMetadata csm = new ChunkServerMetadata(message.getHostname(), message.getFreeSpaceAvailable(),
+                message.getTotalChunksMaintained(), chunkMetadata);
+
+        this.controller.replaceChunkServerMetadata(csm);
+        this.controller.updateFilesMetadata(chunkMetadata, message.getHostname());
+    }
+
+    /**
+     * Uses the HeartbeatMinor Message to update the metadata of a Chunk Server
+     * @param message HeartbeatMinor Message containing metadata about a Chunk Server
+     */
+    public void processHeartbeatMinor(HeartbeatMinor message) {
+        Vector<ChunkMetadata> chunkMetadata = new Vector<>(message.getNewlyAddedChunks());
+        ChunkServerMetadata csm = new ChunkServerMetadata(message.getHostname(), message.getFreeSpaceAvailable(),
+                message.getTotalChunksMaintained(), chunkMetadata);
+
+        this.controller.updateChunkServerMetadata(csm);
+        this.controller.updateFilesMetadata(chunkMetadata, message.getHostname());
     }
 }

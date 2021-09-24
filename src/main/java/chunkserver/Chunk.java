@@ -130,6 +130,25 @@ public class Chunk {
     }
 
     /**
+     * Reads just the metadata associated with a chunk file
+     * @param filename ChunkFilename of the chunk
+     * @return ChunkMetadata - in-memory metadata of the chunk
+     * @throws IOException If unable to read from file
+     */
+    public static ChunkMetadata readChunkMetadata(ChunkFilename filename) throws IOException {
+        String chunkPath = filename.getChunkFilename();
+
+        log.info("Loading chunk metadata from file \"{}\"", chunkPath);
+        FileInputStream fileInputStream = new FileInputStream(chunkPath);
+        DataInputStream dataInputStream = new DataInputStream(fileInputStream);
+        ChunkMetadata metadata = Message.readChunkMetadata(dataInputStream);
+        dataInputStream.close();
+        fileInputStream.close();
+
+        return metadata;
+    }
+
+    /**
      * Creates all the parent directories for a chunk file, if they don't already exist or only partially exist
      * @param filename The ChunkFilename object containing all the parts of the chunk's filename
      * @throws IOException If:

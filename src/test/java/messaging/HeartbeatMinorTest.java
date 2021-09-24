@@ -1,5 +1,6 @@
 package messaging;
 
+import chunkserver.ChunkMetadata;
 import messaging.Message.MessageType;
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +14,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,8 +31,8 @@ public class HeartbeatMinorTest {
         int testPort = 9001;
         int testTotalChunks = 0;
         long testFreeSpace = 0L;
-        String[] testNewChunks = new String[]{};
-        String[] testCorruptedFiles = new String[]{};
+        List<ChunkMetadata> testNewChunks = new ArrayList<>();
+        List<ChunkMetadata> testCorruptedFiles = new ArrayList<>();
 
         HeartbeatMinor message = new HeartbeatMinor(testHostname, testIpAddr, testPort, testTotalChunks,
                 testFreeSpace, testNewChunks, testCorruptedFiles);
@@ -41,18 +44,18 @@ public class HeartbeatMinorTest {
         assertEquals(testPort, message.getPort());
         assertEquals(testTotalChunks, message.getTotalChunksMaintained());
         assertEquals(testFreeSpace, message.getFreeSpaceAvailable());
-        assertArrayEquals(testNewChunks, message.getNewlyAddedChunks());
-        assertArrayEquals(testCorruptedFiles, message.getCorruptedFiles());
+        assertEquals(testNewChunks, message.getNewlyAddedChunks());
+        assertEquals(testCorruptedFiles, message.getCorruptedChunks());
     }
 
     @Test
     public void testMarshalByteLength() {
         String testHostname = "shark";
         String testIpAddr = "129.82.45.138";
-        String[] testNewlyAddedChunks = new String[]{"test chunk 1", "test chunk 5"};
-        String[] testCorruptedFiles = new String[]{"test file 3", "test file 7"};
+        List<ChunkMetadata> testNewChunks = new ArrayList<>();
+        List<ChunkMetadata> testCorruptedFiles = new ArrayList<>();
         HeartbeatMinor message = new HeartbeatMinor(testHostname, testIpAddr,
-                9001, 0, 0L, testNewlyAddedChunks, testCorruptedFiles);
+                9001, 0, 0L, testNewChunks, testCorruptedFiles);
         try {
             ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
             DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
@@ -68,14 +71,8 @@ public class HeartbeatMinorTest {
             // Calculate expected length
             int expectedByteLength = (4 * Integer.BYTES) + (testHostname.length() + testIpAddr.length());
             expectedByteLength += Integer.BYTES + Long.BYTES; // Heartbeat common stuff
-            expectedByteLength += Integer.BYTES; // newly added chunks array length
-            for (String newlyAddedChunk: testNewlyAddedChunks) {
-                expectedByteLength += Integer.BYTES + newlyAddedChunk.length();
-            }
-            expectedByteLength += Integer.BYTES; // corrupted files array length
-            for (String corruptedFile: testCorruptedFiles) {
-                expectedByteLength += Integer.BYTES + corruptedFile.length();
-            }
+            expectedByteLength += Integer.BYTES; // newly added chunks list length
+            expectedByteLength += Integer.BYTES; // corrupted chunks list length
 
             int actualByteLength = message.getMarshaledBytes().length;
             assertEquals(expectedByteLength, actualByteLength);
@@ -91,10 +88,12 @@ public class HeartbeatMinorTest {
         int testPort = 9001;
         int testTotalChunksMaintained = 0;
         long testFreeSpaceAvailable = 0L;
-        String[] testNewlyAddedChunks = new String[]{"test chunk 1", "test chunk 5"};
-        String[] testCorruptedFiles = new String[]{"test file 3", "test file 7"};
+        List<ChunkMetadata> testNewChunks = new ArrayList<>();
+        testNewChunks.add(new ChunkMetadata("/path/to/my/file.data", 3, 35000));
+        testNewChunks.add(new ChunkMetadata("/path/to/my/file2.data", 1, 39000));
+        List<ChunkMetadata> testCorruptedFiles = new ArrayList<>();
         HeartbeatMinor a = new HeartbeatMinor(testHostname, testIpAddr, testPort, testTotalChunksMaintained,
-                testFreeSpaceAvailable, testNewlyAddedChunks, testCorruptedFiles);
+                testFreeSpaceAvailable, testNewChunks, testCorruptedFiles);
 
         try {
             // Init test input stream
@@ -104,6 +103,7 @@ public class HeartbeatMinorTest {
 
             // Create a new Message from a's marshaled bytes
             HeartbeatMinor b = new HeartbeatMinor(dataInputStream);
+            System.out.println(b.toString());
 
             // Clean up input streams
             dataInputStream.close();
@@ -122,10 +122,10 @@ public class HeartbeatMinorTest {
         int testPort = 9001;
         int testTotalChunksMaintained = 0;
         long testFreeSpaceAvailable = 0L;
-        String[] testNewlyAddedChunks = new String[]{"test chunk 1", "test chunk 5"};
-        String[] testCorruptedFiles = new String[]{"test file 3", "test file 7"};
+        List<ChunkMetadata> testNewChunks = new ArrayList<>();
+        List<ChunkMetadata> testCorruptedFiles = new ArrayList<>();
         Message message = new HeartbeatMinor(testHostname, testIpAddr, testPort, testTotalChunksMaintained,
-                testFreeSpaceAvailable, testNewlyAddedChunks, testCorruptedFiles);
+                testFreeSpaceAvailable, testNewChunks, testCorruptedFiles);
 
         MessageType expected = MessageType.HEARTBEAT_MINOR;
         MessageType actual = message.getType();

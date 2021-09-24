@@ -27,6 +27,9 @@ public class Constants {
     public static final int HEARTBEAT_MINOR_INTERVAL = 30 * SEC;
     public static final int HEARTBEAT_MAJOR_INTERVAL = 5 * MIN;
 
+    // Period of time that, after not receiving a heartbeat at the expected interval, we consider the Chunk Server dead
+    public static final int HEARTBEAT_GRACE_PERIOD = 10 * SEC;
+
     // CLI help messages
     public static String CLI_CLIENT_HELP = "Run with command line inputs to change host and port:\n -h hostname \n -p port number";
     public static String CLI_SERVER_HELP = "Run with command line inputs to change port: \n -p port number";

@@ -112,10 +112,7 @@ public class ChunkServerProcessor extends Processor {
                         message.getAbsoluteFilePath(), message.getSequence(), false);
 
                 sendResponse(this.socket, response);
-                return; // Fail fast, don't attempt to process upstream response
             }
-
-
         } else {
             log.info("We are the last recipient of the ChunkStoreRequest, no need to forward");
             response = new ChunkStoreResponse(Host.getHostname(), Host.getIpAddress(),
