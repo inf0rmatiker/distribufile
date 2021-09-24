@@ -49,7 +49,7 @@ public class ChunkServer {
 
         // Apparently this is how you have to implement a walker that skips directories it can't read
         try {
-            Files.walkFileTree(Paths.get(Chunk.getChunkDir()), new SimpleFileVisitor<Path>() {
+            Files.walkFileTree(Paths.get(Chunk.getChunkDir()), new SimpleFileVisitor<>() {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
@@ -88,6 +88,7 @@ public class ChunkServer {
 
         } catch (IOException e) {
             log.error("Caught IOException while walking directory tree! {}", e.getMessage());
+            e.printStackTrace();
         }
         return chunkFilenames;
     }
