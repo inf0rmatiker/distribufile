@@ -100,7 +100,7 @@ public class ChunkServer {
     }
 
     /**
-     * Starts the timer-based thread or sending HeartbeatMajor messages at regular intervals
+     * Starts the timer-based thread for sending HeartbeatMajor messages at regular intervals
      */
     public void startHeartbeatMajorTask() {
         log.info("Starting Major Heartbeat Task...");

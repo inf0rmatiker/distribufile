@@ -30,6 +30,7 @@ public class ChunkServerMetadata {
         this.freeSpaceAvailable = freeSpaceBytes;
         this.totalChunksMaintained = totalChunksMaintained;
         this.chunkMetadata = chunkMetadata;
+        this.lastRecordedHeartbeat = Timestamp.from(Instant.now());
     }
 
     public String getHostname() {

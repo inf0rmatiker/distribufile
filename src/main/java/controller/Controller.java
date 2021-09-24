@@ -3,10 +3,12 @@ package controller;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import chunkserver.HeartbeatMajorTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import chunkserver.ChunkMetadata;
+import util.Constants;
 
 public class Controller {
 
@@ -23,8 +25,20 @@ public class Controller {
         this.trackedFileMetadata = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Starts the server as a thread for accepting incoming connections via Sockets
+     */
     public void startServer() {
         new ControllerServer(this).launchAsThread();
+    }
+
+    /**
+     * Starts the timer-based thread for checking liveness of Chunk Servers by their heartbeats
+     */
+    public void startHeartbeatMonitor() {
+        log.info("Starting Heartbeat Monitor...");
+        Timer heartbeatMonitorDaemon = new Timer("HeartbeatMonitor", true);
+        heartbeatMonitorDaemon.schedule(new HeartbeatMonitor(this), 0, Constants.HEARTBEAT_GRACE_PERIOD);
     }
 
     /**
@@ -49,14 +63,15 @@ public class Controller {
      * @param csm ChunkServerMetadata we received for updating the original
      */
     public synchronized void updateChunkServerMetadata(ChunkServerMetadata csm) {
-        if (this.trackedChunkServerMetadata.containsKey(csm.hostname)) {
-            ChunkServerMetadata old = this.trackedChunkServerMetadata.get(csm.hostname);
-            old.freeSpaceAvailable = csm.freeSpaceAvailable;
-            old.totalChunksMaintained = csm.totalChunksMaintained;
-            old.chunkMetadata.addAll(csm.chunkMetadata);
-            log.info("Updated Chunk Server \"{}\" metadata", csm.hostname);
+        if (this.trackedChunkServerMetadata.containsKey(csm.getHostname())) {
+            ChunkServerMetadata old = this.trackedChunkServerMetadata.get(csm.getHostname());
+            old.lastRecordedHeartbeat = csm.getLastRecordedHeartbeat(); // update heartbeat timestamp
+            old.freeSpaceAvailable = csm.getFreeSpaceAvailable();
+            old.totalChunksMaintained = csm.getTotalChunksMaintained();
+            old.chunkMetadata.addAll(csm.getChunkMetadata());
+            log.info("Updated Chunk Server \"{}\" metadata", csm.getHostname());
         } else {
-            this.trackedChunkServerMetadata.put(csm.hostname, csm);
+            this.trackedChunkServerMetadata.put(csm.getHostname(), csm);
             log.info("Added Chunk Server metadata: {}", csm);
         }
     }
@@ -67,11 +82,11 @@ public class Controller {
      * @param csm ChunkServerMetadata we received for replacing the original
      */
     public synchronized void replaceChunkServerMetadata(ChunkServerMetadata csm) {
-        ChunkServerMetadata prev = this.trackedChunkServerMetadata.put(csm.hostname, csm);
+        ChunkServerMetadata prev = this.trackedChunkServerMetadata.put(csm.getHostname(), csm);
         if (prev == null) {
             log.info("Added Chunk Server metadata: {}", csm);
         } else {
-            log.info("Replaced Chunk Server \"{}\" metadata", csm.hostname);
+            log.info("Replaced Chunk Server \"{}\" metadata", csm.getHostname());
         }
     }
 
