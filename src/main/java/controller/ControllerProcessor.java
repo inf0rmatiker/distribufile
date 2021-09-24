@@ -29,7 +29,7 @@ public class ControllerProcessor extends Processor {
     @Override
     public void process(Message message) {
         // TODO: Implement all possible Message request/response types for Controller
-        log.info("Processing {} Message:\n{}", message.getType(), message);
+        log.info("Processing {} Message from {}", message.getType(), message.getHostname());
 
         switch (message.getType()) {
             case CLIENT_WRITE_REQUEST:

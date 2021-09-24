@@ -184,7 +184,7 @@ public class Chunk {
     public static String getChunkDir() {
         if (CHUNK_DIR == null || CHUNK_DIR.trim().isEmpty()) {
             log.warn("chunk variable not set. Using /tmp as default");
-            return "/tmp";
+            CHUNK_DIR = "/tmp";
         }
         return CHUNK_DIR;
     }

@@ -39,11 +39,10 @@ public class MessageFactory {
      * Creates and returns a concrete Message subclass instance from the integer type specified by the byte message.
      * @param dataInputStream DataInputStream on the Socket containing the message bytes.
      * @return A concrete Message subclass instance
-     * @throws IOException
+     * @throws IOException If unable to read/write
      */
     public Message createMessage(DataInputStream dataInputStream) throws IOException {
         int integerType = dataInputStream.readInt();
-        log.info("createMessage(): Read integer {}", integerType);
 
         // Create concrete Message using type in byte message
         Message.MessageType type = Message.typeFromInteger(integerType);
