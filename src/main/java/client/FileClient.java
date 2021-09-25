@@ -32,8 +32,9 @@ public class FileClient extends Client {
      * 3. Appends the chunk data to the file.
      * 4. Repeat 2, 3 until all chunks have been retrieved and stored in the correct sequence.
      * @param absolutePath Absolute path of the file, from the client's perspective, that exists on the distributed FS.
+     * @param outputFile Path of the file, relative or absolute, that we want to save the retrieved file to
      */
-    public void readFile(String absolutePath) throws IOException {
+    public void readFile(String absolutePath, String outputFile) throws IOException {
         ClientReadRequest readRequest = new ClientReadRequest(Host.getHostname(), Host.getIpAddress(), 0, absolutePath);
         Socket clientSocket = sendMessage(this.controllerHostname, this.controllerPort, readRequest);
 
@@ -42,7 +43,7 @@ public class FileClient extends Client {
         Message response = MessageFactory.getInstance().createMessage(dataInputStream);
         log.info("Received {} Message: {}", response.getType(), response);
 
-        processClientReadResponse((ClientReadResponse) response);
+        processClientReadResponse((ClientReadResponse) response, outputFile);
     }
 
     /**
@@ -108,10 +109,10 @@ public class FileClient extends Client {
      * @param message ClientReadResponse Message received from the Controller
      * @throws IOException If unable to read message or send message
      */
-    public void processClientReadResponse(ClientReadResponse message) throws IOException {
+    public void processClientReadResponse(ClientReadResponse message, String outputFile) throws IOException {
         if (message.getFileExists()) {
             String filename = message.getAbsoluteFilePath();
-            FileSaver fileSaver = new FileSaver(filename);
+            FileSaver fileSaver = new FileSaver(outputFile);
 
             for (int sequence = 0; sequence < message.getChunkServerHostnames().size(); sequence++) {
                 String chunkServerHostname = message.getChunkServerHostnames().get(sequence);

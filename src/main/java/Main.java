@@ -61,11 +61,13 @@ public class Main {
 
                     if (args[2].contains("--read=")) {
                         String filename = args[2].replaceFirst("--read=", "");
+                        String outputFile = args[3].replaceFirst("--output=", "");
                         try {
-                            client.readFile(filename);
+                            client.readFile(filename, outputFile);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+
 
                     } else if (args[2].contains("--write=")) {
 
