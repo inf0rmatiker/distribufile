@@ -74,13 +74,6 @@ public class FileClient extends Client {
         loader.close();
     }
 
-    @Override
-    public void processResponse(Message message) {
-        log.info("Processing {} Message Response:\n{}", message.getType(), message);
-
-
-    }
-
     /**
      * Processes a ClientWriteResponse from the Controller, containing
      * a list of Chunk Servers to write the Chunk to.

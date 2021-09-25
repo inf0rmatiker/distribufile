@@ -3,13 +3,12 @@ package networking;
 import java.io.*;
 import java.net.*;
 
-import chunkserver.ChunkServerProcessor;
 import messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public abstract class Client {
+public class Client {
 
     public static Logger log = LoggerFactory.getLogger(Client.class);
 
@@ -26,7 +25,5 @@ public abstract class Client {
         clientSocket.getOutputStream().write(message.getMarshaledBytes());
         return clientSocket;
     }
-
-    public abstract void processResponse(Message message);
 
 }
