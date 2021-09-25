@@ -1,18 +1,17 @@
 package client;
 
 import chunkserver.ChunkServerProcessor;
-import messaging.ClientWriteRequest;
-import messaging.ClientWriteResponse;
-import messaging.Message;
-import messaging.MessageFactory;
+import messaging.*;
 import networking.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.Constants;
 import util.Host;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 
 public class FileClient extends Client {
 
@@ -46,7 +45,7 @@ public class FileClient extends Client {
      *    in the list with a ChunkStoreRequest, which is then forwarded by that Chunk Server to the next, and so on.
      * 4. Waits for a ChunkStoreResponse to assert the success/failure of that chunk storage.
      * 5. Repeat steps 2, 3, 4 for each chunk in the file.
-     * @param absolutePath
+     * @param absolutePath String absolute path of the file we are writing
      */
     public void writeFile(String absolutePath) throws IOException {
         log.info("Writing file {}", absolutePath);
@@ -59,12 +58,12 @@ public class FileClient extends Client {
             // Construct and send ClientWriteRequest for chunk
             ClientWriteRequest writeRequest = new ClientWriteRequest(Host.getHostname(), Host.getIpAddress(), 0,
                     absolutePath, sequence);
-            Socket clientSocket = Client.sendMessage(this.controllerHostname, this.controllerPort, writeRequest);
+            Socket clientSocket = sendMessage(this.controllerHostname, this.controllerPort, writeRequest);
 
             // Wait for response and process it
             DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
             Message response = MessageFactory.getInstance().createMessage(dataInputStream);
-            processResponse(response);
+            processClientWriteResponse((ClientWriteResponse) response, chunkRead);
 
             // Read next chunk and increment chunk sequence index
             chunkRead = loader.readChunk();
@@ -79,16 +78,24 @@ public class FileClient extends Client {
     public void processResponse(Message message) {
         log.info("Processing {} Message Response:\n{}", message.getType(), message);
 
-        switch (message.getType()) {
-            case CLIENT_WRITE_RESPONSE:
-                break;
-            default:
-                log.error("Unknown MessageType {}", message.getType());
-        }
 
     }
 
-    public void processClientWriteResponse(ClientWriteResponse message) {
+    /**
+     * Processes a ClientWriteResponse from the Controller, containing
+     * a list of Chunk Servers to write the Chunk to.
+     * @param message ClientWriteResponse Message received from the Controller
+     */
+    public void processClientWriteResponse(ClientWriteResponse message, byte[] chunk) throws IOException {
+        List<String> chunkServers = message.getReplicationChunkServers();
+        String poppedChunkServer = chunkServers.remove(chunkServers.size() - 1);
+        ChunkStoreRequest request = new ChunkStoreRequest(Host.getHostname(), Host.getIpAddress(), 0,
+                chunkServers, message.getAbsoluteFilePath(), message.getSequence(), chunk);
+        Socket clientSocket = sendMessage(poppedChunkServer, Constants.CHUNK_SERVER_PORT, request);
 
+        // Wait for response and process it
+        DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
+        Message response = MessageFactory.getInstance().createMessage(dataInputStream);
+        log.info("Received {} Message: {}", response.getType(), response);
     }
 }
