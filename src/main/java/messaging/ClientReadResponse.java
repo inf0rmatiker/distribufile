@@ -24,6 +24,11 @@ public class ClientReadResponse extends Message  {
         this.absoluteFilePath = absoluteFilePath;
         this.chunkServerHostnames = chunkServerHostnames;
         this.fileExists = fileExists;
+        try {
+            marshal();
+        } catch (IOException e) {
+            log.error("Unable to self-marshal ClientReadResponse: {}", e.getMessage());
+        }
     }
 
     public ClientReadResponse(DataInputStream dataInputStream) throws IOException {
