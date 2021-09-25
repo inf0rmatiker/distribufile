@@ -96,4 +96,12 @@ public class ClientWriteResponse extends Message {
                 this.sequence.equals(cwrOther.getSequence())
         );
     }
+
+    @Override
+    public String toString() {
+        return "> ClientWriteResponse:\n" +
+                String.format("  replicationChunkServers: %s\n", this.replicationChunkServers) +
+                String.format("  absoluteFilePath: %s\n", this.absoluteFilePath) +
+                String.format("  sequence: %d\n", this.sequence);
+    }
 }

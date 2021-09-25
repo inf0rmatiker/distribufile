@@ -80,4 +80,11 @@ public class ClientWriteRequest extends Message {
         );
     }
 
+    @Override
+    public String toString() {
+        return "> ClientWriteRequest:\n" +
+                String.format("  absoluteFilePath: %s\n", this.absoluteFilePath) +
+                String.format("  sequence: %d\n", this.sequence);
+    }
+
 }
