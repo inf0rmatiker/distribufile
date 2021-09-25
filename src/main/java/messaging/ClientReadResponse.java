@@ -1,6 +1,7 @@
 package messaging;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -50,6 +51,34 @@ public class ClientReadResponse extends Message  {
 
     public Boolean getFileExists() {
         return fileExists;
+    }
+
+    /**
+     * In addition to the header, writes the absolute path of the file being requested for reading,
+     * the hostnames of the Chunk Servers holding its chunks, and whether we were able to locate the file.
+     * @param dataOutputStream The DataOutputStream we are writing to.
+     * @throws IOException If fails to write to DataOutputStream
+     */
+    @Override
+    public void marshal(DataOutputStream dataOutputStream) throws IOException {
+        super.marshal(dataOutputStream); // first marshal common Message header
+        writeString(dataOutputStream, this.absoluteFilePath);
+        writeStringList(dataOutputStream, this.chunkServerHostnames);
+        dataOutputStream.writeBoolean(this.fileExists);
+    }
+
+    /**
+     * In addition to the header, reads the absolute path of the file being requested for reading,
+     * the hostnames of the Chunk Servers holding its chunks, and whether we were able to locate the file.
+     * @param dataInputStream The DataInputStream we are reading from.
+     * @throws IOException If fails to read from DataInputStream
+     */
+    @Override
+    public void unmarshal(DataInputStream dataInputStream) throws IOException {
+        super.unmarshal(dataInputStream); // first unmarshal common Message header
+        this.absoluteFilePath = readString(dataInputStream);
+        this.chunkServerHostnames = readStringList(dataInputStream);
+        this.fileExists = dataInputStream.readBoolean();
     }
 
     @Override
