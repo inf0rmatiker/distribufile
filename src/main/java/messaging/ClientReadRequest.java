@@ -14,6 +14,11 @@ public class ClientReadRequest extends Message {
         this.ipAddress = ipAddress;
         this.port = port;
         this.absoluteFilePath = absoluteFilePath;
+        try {
+            marshal();
+        } catch (IOException e) {
+            log.error("Unable to self-marshal ClientReadRequest: {}", e.getMessage());
+        }
     }
 
     public ClientReadRequest(DataInputStream dataInputStream) throws IOException {
