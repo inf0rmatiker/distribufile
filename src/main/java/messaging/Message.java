@@ -16,8 +16,8 @@ public abstract class Message {
     public static Logger log = LoggerFactory.getLogger(Message.class);
 
     public enum MessageType {
-        HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST, CLIENT_WRITE_REQUEST, CLIENT_WRITE_RESPONSE,
-        CHUNK_STORE_RESPONSE
+        HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST, CHUNK_STORE_RESPONSE, CLIENT_WRITE_REQUEST, CLIENT_WRITE_RESPONSE,
+         CLIENT_READ_REQUEST, CLIENT_READ_RESPONSE
     }
 
     public String hostname, ipAddress;
@@ -296,9 +296,11 @@ public abstract class Message {
             case 0: return MessageType.HEARTBEAT_MINOR;
             case 1: return MessageType.HEARTBEAT_MAJOR;
             case 2: return MessageType.CHUNK_STORE_REQUEST;
-            case 3: return MessageType.CLIENT_WRITE_REQUEST;
-            case 4: return MessageType.CLIENT_WRITE_RESPONSE;
-            case 5: return MessageType.CHUNK_STORE_RESPONSE;
+            case 3: return MessageType.CHUNK_STORE_RESPONSE;
+            case 4: return MessageType.CLIENT_WRITE_REQUEST;
+            case 5: return MessageType.CLIENT_WRITE_RESPONSE;
+            case 6: return MessageType.CLIENT_READ_REQUEST;
+            case 7: return MessageType.CLIENT_READ_RESPONSE;
             default: return null;
         }
     }
@@ -316,9 +318,11 @@ public abstract class Message {
             case HEARTBEAT_MINOR: return 0;
             case HEARTBEAT_MAJOR: return 1;
             case CHUNK_STORE_REQUEST: return 2;
-            case CLIENT_WRITE_REQUEST: return 3;
-            case CLIENT_WRITE_RESPONSE: return 4;
-            case CHUNK_STORE_RESPONSE: return 5;
+            case CHUNK_STORE_RESPONSE: return 3;
+            case CLIENT_WRITE_REQUEST: return 4;
+            case CLIENT_WRITE_RESPONSE: return 5;
+            case CLIENT_READ_REQUEST: return 6;
+            case CLIENT_READ_RESPONSE: return 7;
             default: return -1;
         }
     }

@@ -59,18 +59,21 @@ public class Main {
                     String controllerHostname = args[1].trim().replaceFirst("--controller=", "");
                     FileClient client = new FileClient(controllerHostname, Constants.CONTROLLER_PORT);
 
-                    if (args[2].contains("--read")) {
-                        // TODO: Implement client read
+                    if (args[2].contains("--read=")) {
+                        String filename = args[2].replaceFirst("--read=", "");
+                        try {
+                            client.readFile(filename);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
 
-                    } else if (args[2].contains("--write")) {
+                    } else if (args[2].contains("--write=")) {
 
-                        if (args[3].contains("--file=")) {
-                            String filename = args[3].replaceFirst("--file=", "");
-                            try {
-                                client.writeFile(filename);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                        String filename = args[2].replaceFirst("--write=", "");
+                        try {
+                            client.writeFile(filename);
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }
                 }

@@ -5,12 +5,15 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 /**
- * A Message concrete class which should be targeted at the controller.Controller to request a list of Chunk Servers
+ * A Message concrete class which should be targeted at the Controller to request a list of Chunk Servers
  * to write a chunk to.
  */
 public class ClientWriteRequest extends Message {
 
+    // The name of the file we are attempting to write
     public String absoluteFilePath;
+
+    // The sequence index of the chunk within the file we are writing
     public Integer sequence;
 
     public ClientWriteRequest(String hostname, String ipAddress, Integer port, String absoluteFilePath, Integer sequence) {

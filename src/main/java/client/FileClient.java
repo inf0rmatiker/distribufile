@@ -33,8 +33,16 @@ public class FileClient extends Client {
      * 4. Repeat 2, 3 until all chunks have been retrieved and stored in the correct sequence.
      * @param absolutePath Absolute path of the file, from the client's perspective, that exists on the distributed FS.
      */
-    public void readFile(String absolutePath) {
+    public void readFile(String absolutePath) throws IOException {
+        ClientReadRequest readRequest = new ClientReadRequest(Host.getHostname(), Host.getIpAddress(), 0, absolutePath);
+        Socket clientSocket = sendMessage(this.controllerHostname, this.controllerPort, readRequest);
 
+        // Wait for response and process it
+        DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
+        Message response = MessageFactory.getInstance().createMessage(dataInputStream);
+        log.info("Received {} Message: {}", response.getType(), response);
+
+        processClientReadResponse((ClientReadResponse) response);
     }
 
     /**
@@ -63,6 +71,7 @@ public class FileClient extends Client {
             // Wait for response and process it
             DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
             Message response = MessageFactory.getInstance().createMessage(dataInputStream);
+            log.info("Received {} Message: {}", response.getType(), response);
             processClientWriteResponse((ClientWriteResponse) response, chunkRead);
 
             // Read next chunk and increment chunk sequence index
@@ -78,6 +87,7 @@ public class FileClient extends Client {
      * Processes a ClientWriteResponse from the Controller, containing
      * a list of Chunk Servers to write the Chunk to.
      * @param message ClientWriteResponse Message received from the Controller
+     * @throws IOException If unable to read message or send message
      */
     public void processClientWriteResponse(ClientWriteResponse message, byte[] chunk) throws IOException {
         List<String> chunkServers = message.getReplicationChunkServers();
@@ -90,5 +100,23 @@ public class FileClient extends Client {
         DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
         Message response = MessageFactory.getInstance().createMessage(dataInputStream);
         log.info("Received {} Message: {}", response.getType(), response);
+    }
+
+    /**
+     * Processes a ClientReadResponse from the Controller, containing a list of Chunk Servers with
+     * the chunks of the file we are trying to read.
+     * @param message ClientReadResponse Message received from the Controller
+     * @throws IOException If unable to read message or send message
+     */
+    public void processClientReadResponse(ClientReadResponse message) throws IOException {
+        if (message.getFileExists()) {
+            for (int sequence = 0; sequence < message.getChunkServerHostnames().size(); sequence++) {
+                String chunkServerHostname = message.getChunkServerHostnames().get(sequence);
+                log.info("Requesting chunk sequence {} from Chunk Server {}", sequence, chunkServerHostname);
+                // TODO: Make request to individual chunk server
+            }
+        } else {
+            // TODO: Handle Controller saying file does not exist
+        }
     }
 }
