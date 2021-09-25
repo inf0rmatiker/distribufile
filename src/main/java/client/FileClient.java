@@ -1,9 +1,30 @@
 package client;
 
+import chunkserver.ChunkServerProcessor;
+import messaging.ClientWriteRequest;
+import messaging.ClientWriteResponse;
 import messaging.Message;
+import messaging.MessageFactory;
 import networking.Client;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import util.Host;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.net.Socket;
 
 public class FileClient extends Client {
+
+    public static Logger log = LoggerFactory.getLogger(FileClient.class);
+
+    public String controllerHostname;
+    public Integer controllerPort;
+
+    public FileClient(String controllerHostname, Integer controllerPort) {
+        this.controllerHostname = controllerHostname;
+        this.controllerPort = controllerPort;
+    }
 
     /**
      * Retrieves an entire file from the distributed file system, and saves it to client's disk:
@@ -27,12 +48,47 @@ public class FileClient extends Client {
      * 5. Repeat steps 2, 3, 4 for each chunk in the file.
      * @param absolutePath
      */
-    public void writeFile(String absolutePath) {
+    public void writeFile(String absolutePath) throws IOException {
+        log.info("Writing file {}", absolutePath);
+        FileLoader loader = new FileLoader(absolutePath);
 
+        byte[] chunkRead = loader.readChunk();
+        int sequence = 0;
+        while (chunkRead != null) {
+
+            // Construct and send ClientWriteRequest for chunk
+            ClientWriteRequest writeRequest = new ClientWriteRequest(Host.getHostname(), Host.getIpAddress(), 0,
+                    absolutePath, sequence);
+            Socket clientSocket = Client.sendMessage(this.controllerHostname, this.controllerPort, writeRequest);
+
+            // Wait for response and process it
+            DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
+            Message response = MessageFactory.getInstance().createMessage(dataInputStream);
+            processResponse(response);
+
+            // Read next chunk and increment chunk sequence index
+            chunkRead = loader.readChunk();
+            sequence++;
+        }
+
+        // Clean up file reader
+        loader.close();
     }
 
     @Override
     public void processResponse(Message message) {
+        log.info("Processing {} Message Response:\n{}", message.getType(), message);
+
+        switch (message.getType()) {
+            case CLIENT_WRITE_RESPONSE:
+                break;
+            default:
+                log.error("Unknown MessageType {}", message.getType());
+        }
+
+    }
+
+    public void processClientWriteResponse(ClientWriteResponse message) {
 
     }
 }

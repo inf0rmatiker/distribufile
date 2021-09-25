@@ -2,6 +2,7 @@ package controller;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import chunkserver.HeartbeatMajorTask;
 import org.slf4j.Logger;
@@ -99,6 +100,38 @@ public class Controller {
             FileMetadata fileMetadata = this.trackedFileMetadata.getOrDefault(filename, new FileMetadata(filename));
             fileMetadata.put(chunkServerHostname, chunkMetadata.getSequence());
         }
+    }
+
+    /**
+     * Selects the k best Chunk Servers to store a chunk replica on.
+     * Uses the criteria of totalChunksMaintained, a lower number being better.
+     * Algorithm used is Unordered Partial Sort, and is O(kn): https://en.wikipedia.org/wiki/Selection_algorithm,
+     * where k is the number of selections we want, and n is the number of Chunk Servers we know about.
+     *
+     * @return Set of k best Chunk Server hostnames to store a replica on
+     */
+    public Set<String> selectBestChunkServersForReplicas() {
+        int k = Constants.CHUNK_REPLICATION;
+        List<ChunkServerMetadata> chunkServerMetadata = new ArrayList<>(getChunkServerMetadata().values());
+        for (int i = 0; i < k; i++) {
+            int bestIndex = i;
+            ChunkServerMetadata bestValue = chunkServerMetadata.get(i);
+            for (int j = i+1; j < chunkServerMetadata.size(); j++) {
+                if (chunkServerMetadata.get(j).getTotalChunksMaintained() < bestValue.getTotalChunksMaintained()) {
+                    bestIndex = j;
+                    bestValue = chunkServerMetadata.get(j);
+                    Collections.swap(chunkServerMetadata, i, bestIndex);
+                }
+            }
+        }
+
+        // At this point, the first k elements of chunkServerMetadata are the best ones, unsorted,
+        // so we just dump them into a Set and return it
+        Set<String> bestSet = new HashSet<>();
+        for (int i = 0; i < k; i++) {
+            bestSet.add(chunkServerMetadata.get(i).getHostname());
+        }
+        return bestSet;
     }
 
 }

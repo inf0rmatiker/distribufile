@@ -2,7 +2,12 @@ package controller;
 
 import chunkserver.ChunkMetadata;
 import org.junit.jupiter.api.Test;
+import util.Constants;
 
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Vector;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,5 +85,38 @@ public class ControllerTest {
         assertEquals(1, controller.getChunkServerMetadata().size());
         assertEquals(0, controller.getChunkServerMetadata().get("shark").totalChunksMaintained);
         assertEquals(0, controller.getChunkServerMetadata().get("shark").chunkMetadata.size());
+    }
+
+    @Test
+    public void testSelectBestChunkServersForReplicas() {
+        Controller controller = new Controller();
+
+        Vector<ChunkMetadata> testMetadata = new Vector<>();
+        Long testFreeBytes = 0L;
+
+        controller.getChunkServerMetadata().put("a", new ChunkServerMetadata("a", testFreeBytes,
+                0, testMetadata));
+        controller.getChunkServerMetadata().put("b", new ChunkServerMetadata("b", testFreeBytes,
+                4, testMetadata));
+        controller.getChunkServerMetadata().put("c", new ChunkServerMetadata("c", testFreeBytes,
+                2, testMetadata));
+        controller.getChunkServerMetadata().put("d", new ChunkServerMetadata("d", testFreeBytes,
+                6, testMetadata));
+        controller.getChunkServerMetadata().put("e", new ChunkServerMetadata("e", testFreeBytes,
+                3, testMetadata));
+        controller.getChunkServerMetadata().put("f", new ChunkServerMetadata("f", testFreeBytes,
+                15, testMetadata));
+
+        Set<String> actual = controller.selectBestChunkServersForReplicas();
+        assertEquals(Constants.CHUNK_REPLICATION, actual.size());
+
+        Set<String> expected = new HashSet<>() {
+            {
+                add("a");
+                add("c");
+                add("e");
+            }
+        };
+        assertTrue(actual.containsAll(expected));
     }
 }

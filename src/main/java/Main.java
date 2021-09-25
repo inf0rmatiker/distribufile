@@ -1,6 +1,7 @@
 import chunkserver.Chunk;
 import chunkserver.ChunkIntegrity;
 import chunkserver.ChunkServer;
+import client.FileClient;
 import controller.Controller;
 import messaging.ChunkStoreRequest;
 import messaging.Message;
@@ -52,13 +53,32 @@ public class Main {
                 controller.startHeartbeatMonitor();
                 break;
 
-            default:
+            case "--client":
 
-                clientSendMsg(args[0]);
+                if (args[1].contains("--controller=")) {
+                    String controllerHostname = args[1].trim().replaceFirst("--controller=", "");
+                    FileClient client = new FileClient(controllerHostname, Constants.CONTROLLER_PORT);
+
+                    if (args[2].contains("--read")) {
+                        // TODO: Implement client read
+
+                    } else if (args[2].contains("--write")) {
+
+                        if (args[3].contains("--file=")) {
+                            String filename = args[3].replaceFirst("--file=", "");
+                            try {
+                                client.writeFile(filename);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
         }
 
     }
 
+    // Only used for hacky testing. TODO: Remove
     public static void clientSendMsg(String filename) {
         String testFile = filename;
         List<String> testReplicationChunkServers = new ArrayList<>(Arrays.asList("swordfish", "sardine"));

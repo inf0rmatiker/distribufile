@@ -24,6 +24,7 @@ public class Constants {
     public static final int CHUNK_SERVER_PORT = 9000;
     public static final int CHUNK_SIZE = 64 * KB;
     public static final int SLICE_SIZE = 8 * KB;
+    public static final int CHUNK_REPLICATION = 3;
     public static final int HEARTBEAT_MINOR_INTERVAL = 30 * SEC;
     public static final int HEARTBEAT_MAJOR_INTERVAL = 5 * MIN;
 

@@ -30,6 +30,14 @@ public class FileMetadata {
         this.chunkServerHostnames = chunkServerHostnames;
     }
 
+    public String getAbsolutePath() {
+        return absolutePath;
+    }
+
+    public Vector<Set<String>> getChunkServerHostnames() {
+        return chunkServerHostnames;
+    }
+
     /**
      * Puts a Chunk Server hostname in the set of hostnames for a given chunk
      * @param chunkServerHostname The hostname of the Chunk Server maintaining the chunk
@@ -39,8 +47,31 @@ public class FileMetadata {
         if (this.chunkServerHostnames.size() <= sequence) {
             fillChunkGaps(sequence);
         }
-        Set<String> existingHostnames = this.chunkServerHostnames.get(sequence);
-        existingHostnames.add(chunkServerHostname);
+        this.chunkServerHostnames.get(sequence).add(chunkServerHostname);
+    }
+
+    /**
+     * Sets a chunk's replication servers to the Set provided
+     * @param chunkServerHostnames Set of Chunk Server hostnames for a chunk replica
+     * @param sequence The sequence index of the chunk within the file
+     */
+    public void put(Set<String> chunkServerHostnames, int sequence) {
+        if (this.chunkServerHostnames.size() <= sequence) {
+            fillChunkGaps(sequence);
+        }
+        this.chunkServerHostnames.set(sequence, chunkServerHostnames);
+    }
+
+    /**
+     * Retrieves the set of Chunk Server hostnames which hold a certain chunk
+     * @param sequence int sequence of the chunk
+     * @return Set of hostnames, or null if sequence is out of bounds
+     */
+    public Set<String> get(int sequence) {
+        if (sequence < this.chunkServerHostnames.size()) {
+            return this.chunkServerHostnames.get(sequence);
+        }
+        return null;
     }
 
     /**
