@@ -110,13 +110,43 @@ public class FileClient extends Client {
      */
     public void processClientReadResponse(ClientReadResponse message) throws IOException {
         if (message.getFileExists()) {
+            String filename = message.getAbsoluteFilePath();
+            FileSaver fileSaver = new FileSaver(filename);
+
             for (int sequence = 0; sequence < message.getChunkServerHostnames().size(); sequence++) {
                 String chunkServerHostname = message.getChunkServerHostnames().get(sequence);
                 log.info("Requesting chunk sequence {} from Chunk Server {}", sequence, chunkServerHostname);
-                // TODO: Make request to individual chunk server
+
+                ChunkReadRequest readRequest = new ChunkReadRequest(Host.getHostname(), Host.getIpAddress(), 0,
+                        filename, sequence);
+                Socket clientSocket = sendMessage(chunkServerHostname, Constants.CHUNK_SERVER_PORT, readRequest);
+
+                // Wait for response and process it
+                DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
+                Message response = MessageFactory.getInstance().createMessage(dataInputStream);
+                log.info("Received {} Message: {}", response.getType(), response);
+                processChunkReadResponse((ChunkReadResponse) response, fileSaver);
             }
+
+            log.info("Wrote all {} chunks to {}", message.getChunkServerHostnames().size(), filename);
+            fileSaver.close();
         } else {
             // TODO: Handle Controller saying file does not exist
+        }
+    }
+
+    /**
+     * Processes a ChunkReadResponse from a Chunk Server, containing the (hopefully) verified chunk data
+     * for a given chunk.
+     * @param message ChunkReadResponse from ChunkServer
+     * @param fileSaver FileSaver reference to write our chunks to disk
+     * @throws IOException If unable to write to disk
+     */
+    public void processChunkReadResponse(ChunkReadResponse message, FileSaver fileSaver) throws IOException {
+        if (message.getIntegrityVerified()) {
+            log.info("Integrity verified for chunk {} of file {}, saving to disk...", message.getSequence(),
+                    message.getAbsoluteFilePath());
+            fileSaver.writeChunk(message.getChunk());
         }
     }
 }

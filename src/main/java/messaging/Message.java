@@ -17,7 +17,7 @@ public abstract class Message {
 
     public enum MessageType {
         HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST, CHUNK_STORE_RESPONSE, CLIENT_WRITE_REQUEST, CLIENT_WRITE_RESPONSE,
-         CLIENT_READ_REQUEST, CLIENT_READ_RESPONSE
+         CLIENT_READ_REQUEST, CLIENT_READ_RESPONSE, CHUNK_READ_REQUEST, CHUNK_READ_RESPONSE
     }
 
     public String hostname, ipAddress;
@@ -301,6 +301,8 @@ public abstract class Message {
             case 5: return MessageType.CLIENT_WRITE_RESPONSE;
             case 6: return MessageType.CLIENT_READ_REQUEST;
             case 7: return MessageType.CLIENT_READ_RESPONSE;
+            case 8: return MessageType.CHUNK_READ_REQUEST;
+            case 9: return MessageType.CHUNK_READ_RESPONSE;
             default: return null;
         }
     }
@@ -323,6 +325,8 @@ public abstract class Message {
             case CLIENT_WRITE_RESPONSE: return 5;
             case CLIENT_READ_REQUEST: return 6;
             case CLIENT_READ_RESPONSE: return 7;
+            case CHUNK_READ_REQUEST: return 8;
+            case CHUNK_READ_RESPONSE: return 9;
             default: return -1;
         }
     }
