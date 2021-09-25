@@ -31,12 +31,14 @@ public class ControllerProcessor extends Processor {
 
     @Override
     public void process(Message message) {
-        // TODO: Implement all possible Message request/response types for Controller
         log.info("Processing {} Message from {}", message.getType(), message.getHostname());
 
         switch (message.getType()) {
             case CLIENT_WRITE_REQUEST:
                 processClientWriteRequest((ClientWriteRequest) message);
+                break;
+            case CLIENT_READ_REQUEST:
+                processClientReadRequest((ClientReadRequest) message);
                 break;
             case HEARTBEAT_MAJOR:
                 processHeartbeatMajor((HeartbeatMajor) message);
@@ -123,5 +125,33 @@ public class ControllerProcessor extends Processor {
         ClientWriteResponse clientWriteResponse = new ClientWriteResponse(Host.getHostname(), Host.getIpAddress(),
                 Constants.CONTROLLER_PORT, new ArrayList<>(replicationChunkServers), filename, sequence);
         sendResponse(this.socket, clientWriteResponse);
+    }
+
+    /**
+     * Processes a ClientReadRequest by retrieving the storage locations for each chunk of the file,
+     * and sending then back to the client. If the file is unrecognized, flag is indicated in the response.
+     * @param message ClientReadRequest containing the filename requested for retrieval
+     */
+    public void processClientReadRequest(ClientReadRequest message) {
+        String filename = message.getAbsoluteFilePath();
+        ClientReadResponse response;
+
+        if (getController().getFilesMetadata().containsKey(filename)) {
+            FileMetadata fileMetadata = getController().getFilesMetadata().get(filename);
+            List<String> chunkHostnames = new ArrayList<>();
+            for (Set<String> chunkServers: fileMetadata.getChunkServerHostnames()) {
+                chunkHostnames.add(chunkServers.iterator().next());
+            }
+
+            // Success - found FileMetadata and Chunk Server locations
+            response = new ClientReadResponse(Host.getHostname(), Host.getIpAddress(), Constants.CONTROLLER_PORT,
+                    filename, chunkHostnames, true);
+        } else {
+
+            // Failure - unable to find FileMetadata
+            response = new ClientReadResponse(Host.getHostname(), Host.getIpAddress(), Constants.CONTROLLER_PORT,
+                    filename, new ArrayList<>(), false);
+        }
+        sendResponse(this.socket, response);
     }
 }
