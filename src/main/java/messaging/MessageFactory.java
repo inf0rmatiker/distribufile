@@ -39,11 +39,10 @@ public class MessageFactory {
      * Creates and returns a concrete Message subclass instance from the integer type specified by the byte message.
      * @param dataInputStream DataInputStream on the Socket containing the message bytes.
      * @return A concrete Message subclass instance
-     * @throws IOException
+     * @throws IOException If unable to read/write
      */
     public Message createMessage(DataInputStream dataInputStream) throws IOException {
         int integerType = dataInputStream.readInt();
-        log.info("createMessage(): Read integer {}", integerType);
 
         // Create concrete Message using type in byte message
         Message.MessageType type = Message.typeFromInteger(integerType);
@@ -52,9 +51,13 @@ public class MessageFactory {
                 case HEARTBEAT_MINOR: return new HeartbeatMinor(dataInputStream);
                 case HEARTBEAT_MAJOR: return new HeartbeatMajor(dataInputStream);
                 case CHUNK_STORE_REQUEST: return new ChunkStoreRequest(dataInputStream);
+                case CHUNK_STORE_RESPONSE: return new ChunkStoreResponse(dataInputStream);
                 case CLIENT_WRITE_REQUEST: return new ClientWriteRequest(dataInputStream);
                 case CLIENT_WRITE_RESPONSE: return new ClientWriteResponse(dataInputStream);
-                case CHUNK_STORE_RESPONSE: return new ChunkStoreResponse(dataInputStream);
+                case CLIENT_READ_REQUEST: return new ClientReadRequest(dataInputStream);
+                case CLIENT_READ_RESPONSE: return new ClientReadResponse(dataInputStream);
+                case CHUNK_READ_REQUEST: return new ChunkReadRequest(dataInputStream);
+                case CHUNK_READ_RESPONSE: return new ChunkReadResponse(dataInputStream);
                 default: return null;
             }
         } else {

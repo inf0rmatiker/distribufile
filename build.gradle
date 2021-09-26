@@ -52,8 +52,8 @@ dependencies {
     // For encoding/decoding hex checksum strings
     implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
 
-    // For deleting an entire directory
-    testImplementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
+    // For deleting an entire directory, and discovering disk space available
+    implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
 
     // For mocking Sockets
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.12.4'
@@ -68,7 +68,7 @@ test {
 }
 
 jar {
-    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA','META-INF/LICENSE.txt','META-INF/NOTICE.txt'
     archiveClassifier = 'uber'
 
     from sourceSets.main.output

@@ -40,5 +40,4 @@ target/
 .classpath
 .project
 .gradle/*
-bin/*
 build/*

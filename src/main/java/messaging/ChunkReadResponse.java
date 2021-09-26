@@ -4,38 +4,39 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-/**
- * A Message concrete class which should be targeted at the Controller to request a list of Chunk Servers
- * to write a chunk to.
- */
-public class ClientWriteRequest extends Message {
+public class ChunkReadResponse extends Message {
 
-    // The name of the file we are attempting to write
     public String absoluteFilePath;
 
-    // The sequence index of the chunk within the file we are writing
     public Integer sequence;
 
-    public ClientWriteRequest(String hostname, String ipAddress, Integer port, String absoluteFilePath, Integer sequence) {
+    public byte[] chunk;
+
+    public Boolean integrityVerified;
+
+    public ChunkReadResponse(String hostname, String ipAddress, Integer port, String absoluteFilePath, Integer sequence,
+                             byte[] chunk, Boolean integrityVerified) {
         this.hostname = hostname;
         this.ipAddress = ipAddress;
         this.port = port;
         this.absoluteFilePath = absoluteFilePath;
         this.sequence = sequence;
+        this.chunk = chunk;
+        this.integrityVerified = integrityVerified;
         try {
             marshal();
         } catch (IOException e) {
-            log.error("Unable to self-marshal ClientWriteRequest: {}", e.getMessage());
+            log.error("Unable to self-marshal ChunkReadResponse: {}", e.getMessage());
         }
     }
 
-    public ClientWriteRequest(DataInputStream dataInputStream) throws IOException {
+    public ChunkReadResponse(DataInputStream dataInputStream) throws IOException {
         this.unmarshal(dataInputStream);
     }
 
     @Override
     public MessageType getType() {
-        return MessageType.CLIENT_WRITE_REQUEST;
+        return MessageType.CHUNK_READ_RESPONSE;
     }
 
     public String getAbsoluteFilePath() {
@@ -46,9 +47,16 @@ public class ClientWriteRequest extends Message {
         return sequence;
     }
 
+    public byte[] getChunk() {
+        return chunk;
+    }
+
+    public Boolean getIntegrityVerified() {
+        return integrityVerified;
+    }
+
     /**
-     * In addition to the header, writes the absolute path of the file for the chunk we
-     * are requesting to write, and the sequence number of the chunk within that file.
+     * In addition to the header, writes the chunk's filename and sequence.
      * @param dataOutputStream The DataOutputStream we are writing to.
      * @throws IOException If fails to read to DataOutputStream
      */
@@ -57,11 +65,15 @@ public class ClientWriteRequest extends Message {
         super.marshal(dataOutputStream); // first marshal common Message header
         writeString(dataOutputStream, this.absoluteFilePath);
         dataOutputStream.writeInt(this.sequence);
+
+        dataOutputStream.writeInt(this.chunk.length);
+        dataOutputStream.write(this.chunk);
+
+        dataOutputStream.writeBoolean(this.integrityVerified);
     }
 
     /**
-     * In addition to the header, reads the absolute path of the file for the chunk being
-     * requested for writing, and the sequence number of the chunk within that file.
+     * In addition to the header, reads the chunk's filename and sequence.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream
      */
@@ -70,24 +82,29 @@ public class ClientWriteRequest extends Message {
         super.unmarshal(dataInputStream); // first unmarshal common Message header
         this.absoluteFilePath = readString(dataInputStream);
         this.sequence = dataInputStream.readInt();
+
+        int chunkLength = dataInputStream.readInt();
+        this.chunk = dataInputStream.readNBytes(chunkLength);
+
+        this.integrityVerified = dataInputStream.readBoolean();
     }
 
     @Override
     public boolean equals(Object other) {
         if (other == null) return false;
         if (other == this) return true;
-        if (!(other instanceof ClientWriteRequest)) return false;
-        ClientWriteRequest cwrOther = (ClientWriteRequest) other;
-        return (this.absoluteFilePath.equals(cwrOther.getAbsoluteFilePath()) &&
-                this.sequence.equals(cwrOther.getSequence())
-        );
+        if (!(other instanceof ChunkReadResponse)) return false;
+        ChunkReadResponse crrOther = (ChunkReadResponse) other;
+        return this.absoluteFilePath.equals(crrOther.getAbsoluteFilePath()) &&
+                this.sequence.equals(crrOther.getSequence());
     }
 
     @Override
     public String toString() {
-        return "> ClientWriteRequest:\n" +
+        return "> ChunkReadResponse:\n" +
                 String.format("  absoluteFilePath: %s\n", this.absoluteFilePath) +
-                String.format("  sequence: %d\n", this.sequence);
+                String.format("  sequence: %d\n", this.sequence) +
+                String.format("  chunk: [ --- byte array of size %d --- ]\n", this.chunk.length) +
+                String.format("  integrityVerified: %b\n", this.integrityVerified);
     }
-
 }

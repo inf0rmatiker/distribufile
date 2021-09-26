@@ -1,6 +1,8 @@
 import chunkserver.Chunk;
 import chunkserver.ChunkIntegrity;
 import chunkserver.ChunkServer;
+import client.FileClient;
+import controller.Controller;
 import messaging.ChunkStoreRequest;
 import messaging.Message;
 import messaging.MessageFactory;
@@ -28,47 +30,93 @@ public class Main {
 
     public static void main(String[] args) {
 
+        switch (args[0].trim()) {
 
-        if (args[0].equals("--chunkserver")) {
+            case "--chunkserver":
 
-            // Start ChunkServer
-            ChunkServer chunkServer = new ChunkServer("localhost", Constants.CONTROLLER_PORT);
-            chunkServer.startServer();
+                if (args[1].contains("--controller=")) {
+                    String controllerHostname = args[1].trim().replaceFirst("--controller=", "");
+                    ChunkServer chunkServer = new ChunkServer(controllerHostname, Constants.CONTROLLER_PORT);
+                    chunkServer.startServer();
+                    chunkServer.startHeartbeatMinorTask();
+                    chunkServer.startHeartbeatMajorTask();
+                    break;
+                } else {
+                    log.warn("Usage: Main --chunkserver --controller=<hostname>");
+                    System.exit(1);
+                }
 
-        } else {
-            String testFile = args[0];
-            List<String> testReplicationChunkServers = new ArrayList<>(Arrays.asList("swordfish", "sardine"));
-            log.info("input file: {}", testFile);
+            case "--controller":
 
-            try {
-                // Read raw chunk data from 35KB file
-                FileInputStream fileInputStream = new FileInputStream(testFile);
-                BufferedInputStream reader = new BufferedInputStream(fileInputStream, CHUNK_SIZE);
-                byte[] chunkData = new byte[35 * KB];
-                int bytesRead = reader.read(chunkData, 0, 35 * KB);
-                log.info("bytes read: {}", bytesRead);
-                reader.close();
-                fileInputStream.close();
+                Controller controller = new Controller();
+                controller.startServer();
+                controller.startHeartbeatMonitor();
+                break;
 
-                // Create ChunkStoreRequest with 35KB chunk data
-                Integer testSequence = 0;
-                ChunkStoreRequest chunkStoreRequest = new ChunkStoreRequest(Host.getHostname(), Host.getIpAddress(), 0,
-                        testReplicationChunkServers, testFile, testSequence, chunkData);
-                log.info("Request:\n{}", chunkStoreRequest);
+            case "--client":
 
-                Socket clientSocket = Client.sendMessage("sole", Constants.CHUNK_SERVER_PORT, chunkStoreRequest);
+                if (args[1].contains("--controller=")) {
+                    String controllerHostname = args[1].trim().replaceFirst("--controller=", "");
+                    FileClient client = new FileClient(controllerHostname, Constants.CONTROLLER_PORT);
 
-                // Wait for ChunkStoreResponse from forward recipient
-                DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
-                Message response = MessageFactory.getInstance().createMessage(dataInputStream);
-                log.info("Response:\n{}", response);
+                    if (args[2].contains("--read=")) {
+                        String filename = args[2].replaceFirst("--read=", "");
+                        String outputFile = args[3].replaceFirst("--output=", "");
+                        try {
+                            client.readFile(filename, outputFile);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
 
-                // Close our open socket with chunk server; we are done talking with them
-                clientSocket.close();
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+                    } else if (args[2].contains("--write=")) {
+
+                        String filename = args[2].replaceFirst("--write=", "");
+                        try {
+                            client.writeFile(filename);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+        }
+
+    }
+
+    // Only used for hacky testing. TODO: Remove
+    public static void clientSendMsg(String filename) {
+        String testFile = filename;
+        List<String> testReplicationChunkServers = new ArrayList<>(Arrays.asList("swordfish", "sardine"));
+        log.info("input file: {}", testFile);
+
+        try {
+            // Read raw chunk data from 35KB file
+            FileInputStream fileInputStream = new FileInputStream(testFile);
+            BufferedInputStream reader = new BufferedInputStream(fileInputStream, CHUNK_SIZE);
+            byte[] chunkData = new byte[35 * KB];
+            int bytesRead = reader.read(chunkData, 0, 35 * KB);
+            log.info("bytes read: {}", bytesRead);
+            reader.close();
+            fileInputStream.close();
+
+            // Create ChunkStoreRequest with 35KB chunk data
+            Integer testSequence = 0;
+            ChunkStoreRequest chunkStoreRequest = new ChunkStoreRequest(Host.getHostname(), Host.getIpAddress(), 0,
+                    testReplicationChunkServers, testFile, testSequence, chunkData);
+            log.info("Request:\n{}", chunkStoreRequest);
+
+            Socket clientSocket = Client.sendMessage("sole", Constants.CHUNK_SERVER_PORT, chunkStoreRequest);
+
+            // Wait for ChunkStoreResponse from forward recipient
+            DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
+            Message response = MessageFactory.getInstance().createMessage(dataInputStream);
+            log.info("Response:\n{}", response);
+
+            // Close our open socket with chunk server; we are done talking with them
+            clientSocket.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

@@ -55,9 +55,8 @@ public class ControllerProcessorTest {
         int testPort = 9001;
         int testTotalChunks = 0;
         long testFreeSpace = 0L;
-        String[] testNewChunks = new String[] {};
-        String[] testCorruptedFiles = new String[] {};
-
+        List<ChunkMetadata> testNewChunks = new ArrayList<>();
+        List<ChunkMetadata> testCorruptedFiles = new ArrayList<>();
         HeartbeatMinor heartbeatMinor = new HeartbeatMinor(testHostname, testIpAddr, testPort, testTotalChunks,
                 testFreeSpace, testNewChunks, testCorruptedFiles);
 

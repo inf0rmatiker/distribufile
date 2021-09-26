@@ -1,14 +1,13 @@
 package chunkserver;
 
-import networking.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.Constants;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -44,22 +43,77 @@ public class ChunkServer {
     /**
      * Recursively walks the chunk storage directory and returns a list of absolute paths of chunk files
      * @return All chunk files' absolute paths
-     * @throws IOException If unable to read
      */
-    public List<String> discoverChunks() throws IOException {
+    public synchronized List<String> discoverChunks() {
         List<String> chunkFilenames = new ArrayList<>();
-        Stream<Path> paths = Files.walk(Paths.get(Chunk.getChunkDir()));
-        paths.filter(Files::isRegularFile).forEach(
-                file -> {
-                    String filename = file.toString();
-                    if (filename.contains("_chunk")) chunkFilenames.add(filename);
+
+        // Apparently this is how you have to implement a walker that skips directories it can't read
+        try {
+            Files.walkFileTree(Paths.get(Chunk.getChunkDir()), new SimpleFileVisitor<>() {
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (attrs.isRegularFile()) {
+                        String filename = file.toString();
+                        if (filename.contains("_chunk")) {
+                            chunkFilenames.add(file.toString());
+                        }
+                    }
+                    return FileVisitResult.CONTINUE;
                 }
-        );
+
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (attrs.isDirectory() && !Files.isReadable(dir)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    } else {
+                        return FileVisitResult.CONTINUE;
+                    }
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException e) {
+                    if (e == null) {
+                        return FileVisitResult.CONTINUE;
+                    } else {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path dir, IOException e) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+            });
+
+        } catch (IOException e) {
+            log.error("Caught IOException while walking directory tree! {}", e.getMessage());
+            e.printStackTrace();
+        }
         return chunkFilenames;
     }
 
-    public void discoverFreeSpaceAvailable() {
-        // TODO: Use system command (df -Th | grep /tmp) to discover available space
+    /**
+     * Reads all the stored chunk files for their metadata, returning as a list
+     * @return List of ChunkMetadata objects, one for each stored chunk file
+     * @throws IOException If unable to read any of the files
+     */
+    public synchronized List<ChunkMetadata> discoverChunksMetadata() throws IOException {
+        List<ChunkMetadata> chunkMetadataList = new ArrayList<>();
+        List<String> chunkFiles = discoverChunks();
+        for (String filename: chunkFiles) {
+            ChunkFilename chunkFilename = new ChunkFilename(filename, Chunk.getChunkDir());
+            chunkMetadataList.add(Chunk.readChunkMetadata(chunkFilename));
+        }
+        return chunkMetadataList;
+    }
+
+    /**
+     * Gets the free space, in bytes, available at the chunk storage directory.
+     * @return Long free bytes available
+     */
+    public synchronized Long discoverFreeSpaceAvailable() {
+        return new File(Chunk.getChunkDir()).getFreeSpace();
     }
 
     /**
@@ -81,13 +135,13 @@ public class ChunkServer {
     }
 
     /**
-     * Starts the timer-based thread or sending HeartbeatMajor messages at regular intervals
+     * Starts the timer-based thread for sending HeartbeatMajor messages at regular intervals
      */
     public void startHeartbeatMajorTask() {
         log.info("Starting Major Heartbeat Task...");
         Timer heartbeatMajorDaemon = new Timer("HeartbeatMajorTask", true);
         heartbeatMajorDaemon.schedule(new HeartbeatMajorTask(this),
-                Constants.HEARTBEAT_MAJOR_INTERVAL, Constants.HEARTBEAT_MAJOR_INTERVAL);
+                0, Constants.HEARTBEAT_MAJOR_INTERVAL);
     }
 
 }

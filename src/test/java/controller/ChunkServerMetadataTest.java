@@ -21,11 +21,11 @@ public class ChunkServerMetadataTest {
             }
         };
 
-        ChunkServerMetadata chunkServerMetadata = new ChunkServerMetadata("localhost", Long.valueOf(3 * MB),
-                Integer.valueOf(5), chunks);
+        ChunkServerMetadata chunkServerMetadata = new ChunkServerMetadata("localhost", 3L * MB,
+                5, chunks);
         assertEquals("localhost", chunkServerMetadata.hostname);
-        assertEquals(Long.valueOf(3 * MB), chunkServerMetadata.freeSpaceAvailable);
-        assertEquals(Integer.valueOf(5), chunkServerMetadata.totalChunksMaintained);
+        assertEquals(3L * MB, chunkServerMetadata.freeSpaceAvailable);
+        assertEquals(5, chunkServerMetadata.totalChunksMaintained);
         assertEquals(chunks, chunkServerMetadata.chunkMetadata);
     }
 
@@ -37,10 +37,10 @@ public class ChunkServerMetadataTest {
             }
         };
 
-        ChunkServerMetadata chunkServerMetadata = new ChunkServerMetadata("localhost", Long.valueOf(3 * MB),
-                Integer.valueOf(5), chunks);
-        ChunkServerMetadata chunkServerMetadata2 = new ChunkServerMetadata("localhost", Long.valueOf(3 * MB),
-                Integer.valueOf(5), chunks);
+        ChunkServerMetadata chunkServerMetadata = new ChunkServerMetadata("localhost", 3L * MB,
+                5, chunks);
+        ChunkServerMetadata chunkServerMetadata2 = new ChunkServerMetadata("localhost", 3L * MB,
+                5, chunks);
         assertEquals(chunkServerMetadata, chunkServerMetadata2);
     }
 

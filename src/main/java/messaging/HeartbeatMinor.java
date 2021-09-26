@@ -1,5 +1,7 @@
 package messaging;
 
+import chunkserver.Chunk;
+import chunkserver.ChunkMetadata;
 import util.Host;
 
 import org.slf4j.Logger;
@@ -11,22 +13,23 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.List;
 
 public class HeartbeatMinor extends Heartbeat {
 
     Logger log = LoggerFactory.getLogger(HeartbeatMinor.class);
 
-    public String[] newlyAddedChunks, corruptedFiles;
+    public List<ChunkMetadata> newlyAddedChunks, corruptedChunks;
 
     public HeartbeatMinor(String hostname, String ipAddress, Integer port, Integer totalChunksMaintained,
-                          Long freeSpaceAvailable, String[] newlyAddedChunks, String[] corruptedFiles) {
+                          Long freeSpaceAvailable, List<ChunkMetadata> newlyAddedChunks, List<ChunkMetadata> corruptedChunks) {
         this.hostname = hostname;
         this.ipAddress = ipAddress;
         this.port = port;
         this.totalChunksMaintained = totalChunksMaintained;
         this.freeSpaceAvailable = freeSpaceAvailable;
         this.newlyAddedChunks = newlyAddedChunks;
-        this.corruptedFiles = corruptedFiles;
+        this.corruptedChunks = corruptedChunks;
         try {
             marshal();
         } catch (IOException e) {
@@ -43,12 +46,12 @@ public class HeartbeatMinor extends Heartbeat {
         return MessageType.HEARTBEAT_MINOR;
     }
 
-    public String[] getNewlyAddedChunks() {
+    public List<ChunkMetadata> getNewlyAddedChunks() {
         return newlyAddedChunks;
     }
 
-    public String[] getCorruptedFiles() {
-        return corruptedFiles;
+    public List<ChunkMetadata> getCorruptedChunks() {
+        return corruptedChunks;
     }
 
 
@@ -56,26 +59,26 @@ public class HeartbeatMinor extends Heartbeat {
      * In addition to the header, total chunks maintained, and free space available, writes any newly added chunks
      * and recently corrupted files to the DataOutputStream.
      * @param dataOutputStream The DataOutputStream we are writing to.
-     * @throws IOException
+     * @throws IOException If unable to write to stream
      */
     @Override
     public void marshal(DataOutputStream dataOutputStream) throws IOException {
         super.marshal(dataOutputStream); // first marshal common Heartbeat fields
-        writeStringArray(dataOutputStream, this.newlyAddedChunks);
-        writeStringArray(dataOutputStream, this.corruptedFiles);
+        writeChunkMetadataList(dataOutputStream, this.newlyAddedChunks);
+        writeChunkMetadataList(dataOutputStream, this.corruptedChunks);
     }
 
     /**
      * In addition to the header, the total chunks maintained, and free space available, this unmarshals the newly
      * added chunks string array and corrupted files string array from the DataInputStream.
      * @param dataInputStream The DataInputStream we are reading from.
-     * @throws IOException
+     * @throws IOException If unable to read from stream
      */
     @Override
     public void unmarshal(DataInputStream dataInputStream) throws IOException {
         super.unmarshal(dataInputStream); // first unmarshal common Heartbeat fields
-        this.newlyAddedChunks = readStringArray(dataInputStream);
-        this.corruptedFiles = readStringArray(dataInputStream);
+        this.newlyAddedChunks = readChunkMetadataList(dataInputStream);
+        this.corruptedChunks = readChunkMetadataList(dataInputStream);
     }
 
     @Override
@@ -89,9 +92,38 @@ public class HeartbeatMinor extends Heartbeat {
                 this.getPort().equals(otherMessage.getPort()) &&
                 this.getTotalChunksMaintained().equals(otherMessage.getTotalChunksMaintained()) &&
                 this.getFreeSpaceAvailable().equals(otherMessage.getFreeSpaceAvailable()) &&
-                Arrays.equals(this.getNewlyAddedChunks(), otherMessage.getNewlyAddedChunks()) &&
-                Arrays.equals(this.getCorruptedFiles(), otherMessage.getCorruptedFiles())
+                this.getNewlyAddedChunks().equals(otherMessage.getNewlyAddedChunks()) &&
+                this.getCorruptedChunks().equals(otherMessage.getCorruptedChunks())
         );
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("HeartbeatMinor:\n");
+        sb.append(String.format("  freeSpaceAvailable: %d\n", this.freeSpaceAvailable));
+        sb.append(String.format("  totalChunksMaintained: %d\n", this.totalChunksMaintained));
+
+        if (this.newlyAddedChunks.isEmpty()) {
+            sb.append("  newlyAddedChunks: [ ]\n");
+        } else {
+            sb.append("  newlyAddedChunks: [\n");
+            for (ChunkMetadata cm: this.newlyAddedChunks) {
+                sb.append(cm);
+            }
+            sb.append("  ]\n");
+        }
+
+        if (this.corruptedChunks.isEmpty()) {
+            sb.append("  corruptedChunks: [ ]\n");
+        } else {
+            sb.append("  corruptedChunks: [\n");
+            for (ChunkMetadata cm: this.corruptedChunks) {
+                sb.append(cm);
+            }
+            sb.append("  ]\n");
+        }
+
+        return sb.toString();
     }
 
 }

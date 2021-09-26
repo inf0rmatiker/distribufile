@@ -1,9 +1,6 @@
 package chunkserver;
 
-import messaging.ChunkStoreRequest;
-import messaging.ChunkStoreResponse;
-import messaging.Message;
-import messaging.MessageFactory;
+import messaging.*;
 import networking.Client;
 import networking.Processor;
 import org.slf4j.Logger;
@@ -43,6 +40,9 @@ public class ChunkServerProcessor extends Processor {
                 break;
             case CHUNK_STORE_RESPONSE:
                 processChunkStoreResponse((ChunkStoreResponse) message);
+                break;
+            case CHUNK_READ_REQUEST:
+                processChunkReadRequest((ChunkReadRequest) message);
                 break;
             default: log.error("Unimplemented Message type \"{}\"", message.getType());
         }
@@ -112,10 +112,7 @@ public class ChunkServerProcessor extends Processor {
                         message.getAbsoluteFilePath(), message.getSequence(), false);
 
                 sendResponse(this.socket, response);
-                return; // Fail fast, don't attempt to process upstream response
             }
-
-
         } else {
             log.info("We are the last recipient of the ChunkStoreRequest, no need to forward");
             response = new ChunkStoreResponse(Host.getHostname(), Host.getIpAddress(),
@@ -146,6 +143,36 @@ public class ChunkServerProcessor extends Processor {
             log.info("Sending SUCCESS back to {}: {}\"", this.socket.getInetAddress().getHostName(), message);
             sendResponse(this.socket, ourResponse);
         }
+    }
+
+    /**
+     * Processes a ChunkReadRequest directly from the Client by sending back the
+     * corresponding chunk data.
+     * @param message ChunkReadRequest
+     */
+    public void processChunkReadRequest(ChunkReadRequest message) {
+        String absolutePath = message.getAbsoluteFilePath();
+        Integer sequence = message.getSequence();
+
+        ChunkFilename chunkFilename = new ChunkFilename(absolutePath, Chunk.getChunkDir(), sequence);
+        try {
+            Chunk requestedChunk = Chunk.load(chunkFilename);
+            ChunkIntegrity chunkIntegrity = requestedChunk.integrity;
+            if (chunkIntegrity.isChunkValid(requestedChunk.data)) {
+                log.info("Chunk {} is valid", chunkFilename);
+                ChunkReadResponse response = new ChunkReadResponse(Host.getHostname(), Host.getIpAddress(),
+                        Constants.CHUNK_SERVER_PORT, absolutePath, sequence, requestedChunk.data, true);
+
+                log.info("Sending ChunkReadResponse back to {}: {}", message.getHostname(), response);
+                sendResponse(this.socket, response);
+            } else {
+                // TODO: Handle case where chunk integrity is invalid
+            }
+
+        } catch (IOException e) {
+            log.error("Unable to load chunk {}: {}", chunkFilename, e.getMessage());
+        }
+
     }
 
 }
