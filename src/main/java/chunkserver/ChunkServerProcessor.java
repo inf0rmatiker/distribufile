@@ -11,6 +11,8 @@ import util.Host;
 import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChunkServerProcessor extends Processor {
 
@@ -158,6 +160,7 @@ public class ChunkServerProcessor extends Processor {
         try {
             Chunk requestedChunk = Chunk.load(chunkFilename);
             ChunkIntegrity chunkIntegrity = requestedChunk.integrity;
+
             if (chunkIntegrity.isChunkValid(requestedChunk.data)) {
                 log.info("Chunk {} is valid", chunkFilename);
                 ChunkReadResponse response = new ChunkReadResponse(Host.getHostname(), Host.getIpAddress(),
@@ -165,8 +168,45 @@ public class ChunkServerProcessor extends Processor {
 
                 log.info("Sending ChunkReadResponse back to {}: {}", message.getHostname(), response);
                 sendResponse(this.socket, response);
-            } else {
-                // TODO: Handle case where chunk integrity is invalid
+            } else { // Chunk is invalid; get replacement
+                log.info("Chunk {} found to be invalid; retrieving replacement...", chunkFilename);
+                HeartbeatMinor chunkCorruptionHeartbeat = new HeartbeatMinor(
+                        Host.getHostname(),
+                        Host.getIpAddress(),
+                        Constants.CHUNK_SERVER_PORT,
+                        getChunkServer().discoverChunks().size(),
+                        getChunkServer().discoverFreeSpaceAvailable(),
+                        new ArrayList<>(), // newlyAddedChunks
+                        new ArrayList<>(List.of(requestedChunk.metadata)) // corruptedChunks
+                );
+
+                // Send notice to Controller about corrupted chunk, wait for response
+                Socket clientSocket = Client.sendMessage(getChunkServer().controllerHostname,
+                        getChunkServer().getControllerPort(), chunkCorruptionHeartbeat);
+
+                // Wait for ChunkReplicationInfo from Controller
+                DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
+                ChunkReplicationInfo criResponse = (ChunkReplicationInfo) MessageFactory.getInstance().createMessage(dataInputStream);
+                clientSocket.close(); // done talking to Controller
+
+                String contact = criResponse.replicationChunkServer;
+                ChunkReadRequest replacementRequest = new ChunkReadRequest(
+                        Host.getHostname(),
+                        Host.getIpAddress(),
+                        Constants.CHUNK_SERVER_PORT,
+                        absolutePath,
+                        sequence
+                );
+
+                // Open Socket to the other Chunk Server holding our replacement chunk, and request chunk
+                clientSocket = Client.sendMessage(contact, Constants.CHUNK_SERVER_PORT, replacementRequest);
+
+                // Wait for ChunkReadResponse from replacement Chunk Server
+                dataInputStream = new DataInputStream(clientSocket.getInputStream());
+                ChunkReplacementResponse crrResponse = (ChunkReplacementResponse) MessageFactory.getInstance().createMessage(dataInputStream);
+                clientSocket.close(); // done talking to replacement Chunk Server
+
+
             }
 
         } catch (IOException e) {
