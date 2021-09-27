@@ -164,7 +164,7 @@ public class ChunkServerProcessor extends Processor {
             if (chunkIntegrity.isChunkValid(requestedChunk.data)) {
                 log.info("Chunk {} is valid", chunkFilename);
                 ChunkReadResponse response = new ChunkReadResponse(Host.getHostname(), Host.getIpAddress(),
-                        Constants.CHUNK_SERVER_PORT, absolutePath, sequence, requestedChunk.data, true);
+                        Constants.CHUNK_SERVER_PORT, absolutePath, sequence, requestedChunk, true);
 
                 log.info("Sending ChunkReadResponse back to {}: {}", message.getHostname(), response);
                 sendResponse(this.socket, response);

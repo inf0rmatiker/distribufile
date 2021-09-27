@@ -1,6 +1,5 @@
 package client;
 
-import chunkserver.ChunkServerProcessor;
 import messaging.*;
 import networking.Client;
 import org.slf4j.Logger;
@@ -147,7 +146,7 @@ public class FileClient extends Client {
         if (message.getIntegrityVerified()) {
             log.info("Integrity verified for chunk {} of file {}, saving to disk...", message.getSequence(),
                     message.getAbsoluteFilePath());
-            fileSaver.writeChunk(message.getChunk());
+            fileSaver.writeChunk(message.getChunk().data);
         }
     }
 }

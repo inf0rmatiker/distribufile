@@ -1,5 +1,7 @@
 package messaging;
 
+import chunkserver.Chunk;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -10,12 +12,12 @@ public class ChunkReadResponse extends Message {
 
     public Integer sequence;
 
-    public byte[] chunk;
+    public Chunk chunk;
 
     public Boolean integrityVerified;
 
     public ChunkReadResponse(String hostname, String ipAddress, Integer port, String absoluteFilePath, Integer sequence,
-                             byte[] chunk, Boolean integrityVerified) {
+                             Chunk chunk, Boolean integrityVerified) {
         this.hostname = hostname;
         this.ipAddress = ipAddress;
         this.port = port;
@@ -47,7 +49,7 @@ public class ChunkReadResponse extends Message {
         return sequence;
     }
 
-    public byte[] getChunk() {
+    public Chunk getChunk() {
         return chunk;
     }
 
@@ -56,24 +58,21 @@ public class ChunkReadResponse extends Message {
     }
 
     /**
-     * In addition to the header, writes the chunk's filename and sequence.
+     * In addition to the header, writes the chunk's filename, sequence, and Chunk object.
      * @param dataOutputStream The DataOutputStream we are writing to.
-     * @throws IOException If fails to read to DataOutputStream
+     * @throws IOException If fails to write to DataOutputStream
      */
     @Override
     public void marshal(DataOutputStream dataOutputStream) throws IOException {
         super.marshal(dataOutputStream); // first marshal common Message header
         writeString(dataOutputStream, this.absoluteFilePath);
         dataOutputStream.writeInt(this.sequence);
-
-        dataOutputStream.writeInt(this.chunk.length);
-        dataOutputStream.write(this.chunk);
-
+        writeChunk(dataOutputStream, this.chunk);
         dataOutputStream.writeBoolean(this.integrityVerified);
     }
 
     /**
-     * In addition to the header, reads the chunk's filename and sequence.
+     * In addition to the header, reads the chunk's filename, sequence, and Chunk object.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream
      */
@@ -82,10 +81,7 @@ public class ChunkReadResponse extends Message {
         super.unmarshal(dataInputStream); // first unmarshal common Message header
         this.absoluteFilePath = readString(dataInputStream);
         this.sequence = dataInputStream.readInt();
-
-        int chunkLength = dataInputStream.readInt();
-        this.chunk = dataInputStream.readNBytes(chunkLength);
-
+        this.chunk = readChunk(dataInputStream);
         this.integrityVerified = dataInputStream.readBoolean();
     }
 
@@ -104,7 +100,7 @@ public class ChunkReadResponse extends Message {
         return "> ChunkReadResponse:\n" +
                 String.format("  absoluteFilePath: %s\n", this.absoluteFilePath) +
                 String.format("  sequence: %d\n", this.sequence) +
-                String.format("  chunk: [ --- byte array of size %d --- ]\n", this.chunk.length) +
+                String.format("  chunk: %s\n", this.chunk) +
                 String.format("  integrityVerified: %b\n", this.integrityVerified);
     }
 }

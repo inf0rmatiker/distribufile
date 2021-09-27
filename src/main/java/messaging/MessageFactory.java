@@ -58,6 +58,8 @@ public class MessageFactory {
                 case CLIENT_READ_RESPONSE: return new ClientReadResponse(dataInputStream);
                 case CHUNK_READ_REQUEST: return new ChunkReadRequest(dataInputStream);
                 case CHUNK_READ_RESPONSE: return new ChunkReadResponse(dataInputStream);
+                case CHUNK_REPLACEMENT_REQUEST: return new ChunkReplacementRequest(dataInputStream);
+                case CHUNK_REPLACEMENT_RESPONSE: return new ChunkReplacementResponse(dataInputStream);
                 default: return null;
             }
         } else {
