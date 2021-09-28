@@ -32,9 +32,7 @@ public class ChunkServerProcessor extends Processor {
 
     @Override
     public void process(Message message) {
-        // TODO: Implement all possible Message request/response types for ChunkServer
         log.info("Processing {} Message from {}:\n{}", message.getType(), message.getHostname(), message);
-
 
         switch(message.getType()) {
             case CHUNK_STORE_REQUEST:
@@ -51,8 +49,6 @@ public class ChunkServerProcessor extends Processor {
                 break;
             default: log.error("Unimplemented Message type \"{}\"", message.getType());
         }
-
-
     }
 
     /**
@@ -69,7 +65,7 @@ public class ChunkServerProcessor extends Processor {
         ChunkMetadata metadata = new ChunkMetadata(message.getAbsoluteFilePath(), message.getSequence(), message.getChunkData().length);
         ChunkIntegrity integrity = new ChunkIntegrity(ChunkIntegrity.calculateSliceChecksums(message.getChunkData()));
         Chunk chunk = new Chunk(metadata, integrity, message.getChunkData());
-        Message response;
+        ChunkStoreResponse response;
 
         // Either save or update chunk file
         try {
@@ -103,13 +99,22 @@ public class ChunkServerProcessor extends Processor {
 
                 // Wait for ChunkStoreResponse from forward recipient
                 DataInputStream dataInputStream = new DataInputStream(forwardSocket.getInputStream());
-                response = MessageFactory.getInstance().createMessage(dataInputStream);
+                response = (ChunkStoreResponse) MessageFactory.getInstance().createMessage(dataInputStream);
+                forwardSocket.close(); // done talking with upstream Chunk Server
 
                 // Process the ChunkStoreResponse from upstream
-                process(response);
+                if (!response.getSuccess()) { // Just forward the same failure message back, so we can locate the failure
+                    log.error("Forwarding back ChunkStoreResponse for file {}, chunk {} failure from Chunk Server {}",
+                            message.getAbsoluteFilePath(), message.getSequence(), message.getHostname());
+                    sendResponse(this.socket, message);
 
-                // Close our open socket with forward recipient; we are done talking with them
-                forwardSocket.close();
+                } else { // Rebuild same success response message but with our hostname/IP
+                    ChunkStoreResponse ourResponse = new ChunkStoreResponse(Host.getHostname(), Host.getIpAddress(),
+                            Constants.CHUNK_SERVER_PORT, message.getAbsoluteFilePath(), message.getSequence(),
+                            response.getSuccess());
+                    log.info("Sending success back to {}: {}\"", this.socket.getInetAddress().getHostName(), message);
+                    sendResponse(this.socket, ourResponse);
+                }
 
             } catch (IOException e) {
                 log.error("Failed to forward ChunkStoreRequest to Chunk Server {}: {}", nextRecipientHostname, e.getMessage());
@@ -124,7 +129,7 @@ public class ChunkServerProcessor extends Processor {
                     Constants.CHUNK_SERVER_PORT, message.getAbsoluteFilePath(), message.getSequence(), true);
 
             // If we've made it here, success; send successful ChunkStoreResponse Message
-            log.info("Sending ChunkStoreResponse SUCCESS back to {}: {}", message.getHostname(), response);
+            log.info("Sending ChunkStoreResponse success back to {}: {}", message.getHostname(), response);
             sendResponse(this.socket, response);
         }
     }
@@ -137,17 +142,7 @@ public class ChunkServerProcessor extends Processor {
      *                ChunkStoreRequest)
      */
     public void processChunkStoreResponse(ChunkStoreResponse message) {
-        if (!message.getSuccess()) { // Just forward the same failure message back, so we can locate the failure
-            log.error("Forwarding back ChunkStoreResponse for file {}, chunk {} FAILURE from Chunk Server {}",
-                    message.getAbsoluteFilePath(), message.getSequence(), message.getHostname());
-            sendResponse(this.socket, message);
-        } else { // Rebuild same success response message but with our hostname/IP
-            ChunkStoreResponse ourResponse = new ChunkStoreResponse(Host.getHostname(), Host.getIpAddress(),
-                    Constants.CHUNK_SERVER_PORT, message.getAbsoluteFilePath(), message.getSequence(),
-                    message.getSuccess());
-            log.info("Sending SUCCESS back to {}: {}\"", this.socket.getInetAddress().getHostName(), message);
-            sendResponse(this.socket, ourResponse);
-        }
+
     }
 
     /**
@@ -171,7 +166,7 @@ public class ChunkServerProcessor extends Processor {
         List<String> chunkReplacements = new ArrayList<>();
 
         // Load chunk from disk
-        Chunk requestedChunk = null;
+        Chunk requestedChunk;
         try {
             requestedChunk = Chunk.load(chunkFilename);
         } catch (IOException e) {
@@ -198,7 +193,7 @@ public class ChunkServerProcessor extends Processor {
             );
             log.info("Getting replication information for chunk {} from Controller", chunkFilename);
 
-            ChunkReplicationInfo criResponse = null;
+            ChunkReplicationInfo criResponse;
             try {
                 Socket clientSocket = Client.sendMessage(getChunkServer().controllerHostname,
                         getChunkServer().getControllerPort(), chunkCorruptionHeartbeat);
@@ -223,7 +218,7 @@ public class ChunkServerProcessor extends Processor {
             );
             log.info("Requesting replacement for chunk {} from Chunk Server {}", chunkFilename, contact);
 
-            ChunkReplacementResponse crrResponse = null;
+            ChunkReplacementResponse crrResponse;
             try {
                 Socket clientSocket = Client.sendMessage(contact, Constants.CHUNK_SERVER_PORT, replacementRequest);
                 DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
@@ -257,7 +252,7 @@ public class ChunkServerProcessor extends Processor {
                 );
                 Socket clientSocket = Client.sendMessage(getChunkServer().getControllerHostname(),
                         Constants.CHUNK_SERVER_PORT, correctionNotification);
-                clientSocket.close();
+                clientSocket.close(); // we are not expecting a response
             } catch (IOException e) {
                 log.warn("Unable to notify Controller of chunk {} correction: {}", chunkFilename, e.getMessage());
             }
