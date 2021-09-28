@@ -55,7 +55,7 @@ public class Main {
 
     public static String[] getWriteArgs(Getopt g, String[] args) {
         String[] writeArgs = new String[2];
-        int index = g.getOptind();
+        int index = g.getOptind() - 1;
         for (int i = 0; index < args.length; i++) {
                 writeArgs[i] = args[index];
                 index++;
