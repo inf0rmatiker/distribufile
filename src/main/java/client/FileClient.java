@@ -116,6 +116,7 @@ public class FileClient extends Client {
             String filename = message.getAbsoluteFilePath();
             FileSaver fileSaver = new FileSaver(outputFile);
 
+            Integer latestVersion = 0;
             for (int sequence = 0; sequence < message.getChunkServerHostnames().size(); sequence++) {
                 String chunkServerHostname = message.getChunkServerHostnames().get(sequence);
                 log.info("Requesting chunk sequence {} from Chunk Server {}", sequence, chunkServerHostname);
@@ -126,15 +127,27 @@ public class FileClient extends Client {
 
                 // Wait for response and process it
                 DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
-                Message response = MessageFactory.getInstance().createMessage(dataInputStream);
-                log.info("Received {} Message: {}", response.getType(), response);
-                processChunkReadResponse((ChunkReadResponse) response, fileSaver);
+                ChunkReadResponse response = (ChunkReadResponse) MessageFactory.getInstance().createMessage(dataInputStream);
+                log.info("Received {} from {} for file {}, chunk {}", response.getType(), response.getHostname(),
+                        response.getAbsoluteFilePath(), response.getSequence());
+
+                // First chunk always has the latest version, since overwriting a file with a shorter version
+                // results in the last chunks of the old version being outdated
+                if (sequence == 0) {
+                    latestVersion = response.getChunk().metadata.getVersion();
+                } else if (response.getChunk().metadata.getVersion() < latestVersion) {
+                    log.warn("Chunk version {} is outdated; done reading all latest chunks",
+                            response.getChunk().metadata.getVersion());
+                    break;
+                }
+                log.info("Chunk version {} is latest, saving to disk", response.getChunk().metadata.getVersion());
+                processChunkReadResponse(response, fileSaver);
             }
 
             log.info("Wrote all {} chunks to {}", message.getChunkServerHostnames().size(), filename);
             fileSaver.close();
         } else {
-            // TODO: Handle Controller saying file does not exist
+            log.error("File {} does not exist on the filesystem!", message.getAbsoluteFilePath());
         }
     }
 

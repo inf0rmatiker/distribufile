@@ -97,6 +97,13 @@ public class ChunkFilename {
      */
     public String getChunkBase() { return this.chunkDir + this.base; }
 
+    /**
+     * @return The Integer sequence of the chunk
+     */
+    public Integer getChunkSequence() {
+        return Integer.parseInt(getChunkSuffix().replaceFirst("_chunk", ""));
+    }
+
     @Override
     public String toString() {
         return getChunkFilename();

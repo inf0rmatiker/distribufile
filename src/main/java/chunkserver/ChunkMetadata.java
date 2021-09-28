@@ -22,6 +22,10 @@ public class ChunkMetadata {
     // The absolute file path of the file to which the chunk belongs
     public String absoluteFilePath;
 
+    public ChunkMetadata(String absoluteFilePath, Integer sequence) {
+        this(absoluteFilePath, sequence, 0);
+    }
+
     public ChunkMetadata(String absoluteFilePath, Integer sequence, Integer sizeBytes) {
         this(absoluteFilePath, 1, sequence, Timestamp.from(Instant.now()), sizeBytes);
     }
