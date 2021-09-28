@@ -174,7 +174,7 @@ public class ChunkServerProcessor extends Processor {
         }
 
         // Check validity of chunk
-        if (requestedChunk == null || requestedChunk.isValid()) {
+        if (requestedChunk != null && requestedChunk.isValid()) {
             log.info("Chunk {} is valid", chunkFilename); // nothing more to do, just send Chunk back
         } else { // chunk is invalid; get replacement
             log.info("Chunk {} found to be invalid; retrieving replacement...", chunkFilename);
