@@ -1,122 +1,126 @@
-import chunkserver.Chunk;
-import chunkserver.ChunkIntegrity;
 import chunkserver.ChunkServer;
 import client.FileClient;
 import controller.Controller;
-import messaging.ChunkStoreRequest;
-import messaging.Message;
-import messaging.MessageFactory;
-import networking.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.Constants;
-import util.Host;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
-import static util.Constants.CHUNK_SIZE;
-import static util.Constants.KB;
+import gnu.getopt.Getopt;
+import gnu.getopt.LongOpt;
 
 public class Main {
 
     public static Logger log = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) {
+    public static void printUsage() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Usage: Main [options]\n\n");
+        sb.append("--chunkserver <controller hostname>\n");
+        sb.append("\t start chunk server with <controller hostname> it should contact.\n\n");
+        sb.append("--controller\n");
+        sb.append("\t start controller for current machine.\n\n");
+        sb.append("--client-write <controller hostname> <file>\n");
+        sb.append("\t write <file> to controller with <controller hostname> it should contact.\n\n");
+        sb.append("--client-read <controller hostname> <file> <outout path>\n");
+        sb.append("\t read <file> from controller with <controller hostname> it should contact\n");
+        sb.append("\t along with the output path of the file.\n\n");
 
-        switch (args[0].trim()) {
-
-            case "--chunkserver":
-
-                if (args[1].contains("--controller=")) {
-                    String controllerHostname = args[1].trim().replaceFirst("--controller=", "");
-                    ChunkServer chunkServer = new ChunkServer(controllerHostname, Constants.CONTROLLER_PORT);
-                    chunkServer.startServer();
-                    chunkServer.startHeartbeatMinorTask();
-                    chunkServer.startHeartbeatMajorTask();
-                    break;
-                } else {
-                    log.warn("Usage: Main --chunkserver --controller=<hostname>");
-                    System.exit(1);
-                }
-
-            case "--controller":
-
-                Controller controller = new Controller();
-                controller.startServer();
-                controller.startHeartbeatMonitor();
-                break;
-
-            case "--client":
-
-                if (args[1].contains("--controller=")) {
-                    String controllerHostname = args[1].trim().replaceFirst("--controller=", "");
-                    FileClient client = new FileClient(controllerHostname, Constants.CONTROLLER_PORT);
-
-                    if (args[2].contains("--read=")) {
-                        String filename = args[2].replaceFirst("--read=", "");
-                        String outputFile = args[3].replaceFirst("--output=", "");
-                        try {
-                            client.readFile(filename, outputFile);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-
-
-                    } else if (args[2].contains("--write=")) {
-
-                        String filename = args[2].replaceFirst("--write=", "");
-                        try {
-                            client.writeFile(filename);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-        }
-
+        System.out.println(sb.toString());
     }
 
-    // Only used for hacky testing. TODO: Remove
-    public static void clientSendMsg(String filename) {
-        String testFile = filename;
-        List<String> testReplicationChunkServers = new ArrayList<>(Arrays.asList("swordfish", "sardine"));
-        log.info("input file: {}", testFile);
+    public static LongOpt[] generateValidOptions() {
+        LongOpt[] longopts = new LongOpt[4];
+        longopts[0] = new LongOpt("chunkserver", LongOpt.REQUIRED_ARGUMENT, null, 's');
+        longopts[1] = new LongOpt("client-read", LongOpt.OPTIONAL_ARGUMENT, null, 'r');
+        longopts[2] = new LongOpt("client-write", LongOpt.OPTIONAL_ARGUMENT, null, 'w');
+        longopts[3] = new LongOpt("controller", LongOpt.REQUIRED_ARGUMENT, null, 'c');
+        return longopts;
+    }
 
+    public static void startChunkServer(String controllerHostname) {
+        ChunkServer chunkServer = new ChunkServer(controllerHostname, Constants.CONTROLLER_PORT);
+        chunkServer.startServer();
+        chunkServer.startHeartbeatMinorTask();
+        chunkServer.startHeartbeatMajorTask();
+    }
+
+    public static void startController() {
+        Controller controller = new Controller();
+        controller.startServer();
+        controller.startHeartbeatMonitor();
+    }
+
+    public static String[] getWriteArgs(Getopt g, String[] args) {
+        String[] writeArgs = new String[2];
+        int index = g.getOptind();
+        for (int i = 0; index < args.length; i++) {
+                writeArgs[i] = args[index];
+                index++;
+        }
+        g.setOptind(index - 1);
+        return writeArgs;
+    }
+
+    public static String[] getReadArgs(Getopt g, String[] args) {
+        String[] readArgs = new String[3];
+        int index = g.getOptind();  
+        for (int i = 0; index < args.length; i++) {
+            readArgs[i] = args[index];
+            index++;
+        }
+        g.setOptind(index - 1);
+        return readArgs;
+    }
+
+    public static void clientWriteFile(String controllerHostname, String filename) {
+        FileClient client = new FileClient(controllerHostname, Constants.CONTROLLER_PORT);
         try {
-            // Read raw chunk data from 35KB file
-            FileInputStream fileInputStream = new FileInputStream(testFile);
-            BufferedInputStream reader = new BufferedInputStream(fileInputStream, CHUNK_SIZE);
-            byte[] chunkData = new byte[35 * KB];
-            int bytesRead = reader.read(chunkData, 0, 35 * KB);
-            log.info("bytes read: {}", bytesRead);
-            reader.close();
-            fileInputStream.close();
-
-            // Create ChunkStoreRequest with 35KB chunk data
-            Integer testSequence = 0;
-            ChunkStoreRequest chunkStoreRequest = new ChunkStoreRequest(Host.getHostname(), Host.getIpAddress(), 0,
-                    testReplicationChunkServers, testFile, testSequence, chunkData);
-            log.info("Request:\n{}", chunkStoreRequest);
-
-            Socket clientSocket = Client.sendMessage("sole", Constants.CHUNK_SERVER_PORT, chunkStoreRequest);
-
-            // Wait for ChunkStoreResponse from forward recipient
-            DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
-            Message response = MessageFactory.getInstance().createMessage(dataInputStream);
-            log.info("Response:\n{}", response);
-
-            // Close our open socket with chunk server; we are done talking with them
-            clientSocket.close();
-
+            client.writeFile(filename);
         } catch (IOException e) {
             e.printStackTrace();
+            log.error("Error writing file: {}", filename);
         }
     }
+
+    public static void clientReadFile(String controllerHostname, String filename, String output) {
+        FileClient client = new FileClient(controllerHostname, Constants.CONTROLLER_PORT);
+        try {
+            client.readFile(filename, output);
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.error("Error reading file: {} to output", filename, output);
+        }
+    }
+
+    public static void main(String[] args) {
+        Getopt g = new Getopt("Main.java", args, "", generateValidOptions(), true);
+        int c;
+        while ((c = g.getopt()) != -1) {
+            switch (c) {
+                case 's':
+                    startChunkServer(g.getOptarg());
+                    break;
+                case 'r':
+                    String[] readArgs = getReadArgs(g, args);
+                    System.out.println(Arrays.toString(readArgs));
+                    clientReadFile(readArgs[0], readArgs[1], readArgs[2]);
+                    break;
+                case 'w':
+                    String[] writeArgs = getWriteArgs(g, args);
+                    clientWriteFile(writeArgs[0], writeArgs[1]);
+                    break;
+                case 'c':
+                    startController();
+                    break;
+                default:
+                    printUsage();
+                    System.exit(1);
+            }
+        }
+
+    }
+
 }
