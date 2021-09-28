@@ -188,7 +188,7 @@ public class ChunkServerProcessor extends Processor {
                     getChunkServer().discoverChunks().size(),
                     getChunkServer().discoverFreeSpaceAvailable(),
                     new ArrayList<>(), // newlyAddedChunks
-                    new ArrayList<>(List.of(requestedChunk.metadata)) // corruptedChunks
+                    new ArrayList<>(List.of(new ChunkMetadata(absolutePath, sequence))) // corruptedChunks
             );
             log.info("Getting replication information for chunk {} from Controller", chunkFilename);
 
@@ -250,7 +250,7 @@ public class ChunkServerProcessor extends Processor {
                         sequence
                 );
                 Socket clientSocket = Client.sendMessage(getChunkServer().getControllerHostname(),
-                        Constants.CHUNK_SERVER_PORT, correctionNotification);
+                        Constants.CONTROLLER_PORT, correctionNotification);
                 clientSocket.close(); // we are not expecting a response
             } catch (IOException e) {
                 log.warn("Unable to notify Controller of chunk {} correction: {}", chunkFilename, e.getMessage());
