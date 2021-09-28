@@ -143,10 +143,14 @@ public class FileClient extends Client {
      * @throws IOException If unable to write to disk
      */
     public void processChunkReadResponse(ChunkReadResponse message, FileSaver fileSaver) throws IOException {
-        if (message.getIntegrityVerified()) {
-            log.info("Integrity verified for chunk {} of file {}, saving to disk...", message.getSequence(),
-                    message.getAbsoluteFilePath());
-            fileSaver.writeChunk(message.getChunk().data);
+        if (message.getChunkReplacements().isEmpty()) {
+            log.info("Chunk integrity successfully verified by first Chunk Server {}; no replacements took place",
+                    message.getHostname());
+        } else {
+            for (String failedChunkServer: message.getChunkReplacements()) {
+                log.warn("Chunk integrity failed at Chunk Server {}; had to get replacement chunk", failedChunkServer);
+            }
         }
+        fileSaver.writeChunk(message.getChunk().data);
     }
 }
