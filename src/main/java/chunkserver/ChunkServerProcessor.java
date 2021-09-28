@@ -166,16 +166,15 @@ public class ChunkServerProcessor extends Processor {
         List<String> chunkReplacements = new ArrayList<>();
 
         // Load chunk from disk
-        Chunk requestedChunk;
+        Chunk requestedChunk = null;
         try {
             requestedChunk = Chunk.load(chunkFilename);
         } catch (IOException e) {
             log.error("Unable to load requested Chunk {}: {}", chunkFilename, e.getMessage());
-            return;
         }
 
         // Check validity of chunk
-        if (requestedChunk.isValid()) {
+        if (requestedChunk == null || requestedChunk.isValid()) {
             log.info("Chunk {} is valid", chunkFilename); // nothing more to do, just send Chunk back
         } else { // chunk is invalid; get replacement
             log.info("Chunk {} found to be invalid; retrieving replacement...", chunkFilename);
