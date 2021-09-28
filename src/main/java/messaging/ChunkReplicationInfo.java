@@ -30,7 +30,7 @@ public class ChunkReplicationInfo extends Message {
 
     @Override
     public MessageType getType() {
-        return null;
+        return MessageType.CHUNK_REPLICATION_INFO;
     }
 
     public String getReplicationChunkServer() {
