@@ -53,8 +53,10 @@ public class Main {
         controller.startHeartbeatMonitor();
     }
 
-    public static String[] getWriteArgs(Getopt g, String[] args) {
-        String[] writeArgs = new String[2];
+    public static String[] getReadWriteArgs(Getopt g, String[] args, boolean isRead) {
+        int WRITE_ARGS_LENGTH = 2;
+        int READ_ARGS_LENGTH = 3;
+        String[] writeArgs = new String[isRead ? READ_ARGS_LENGTH : WRITE_ARGS_LENGTH];
         int index = g.getOptind() - 1;
         for (int i = 0; index < args.length; i++) {
                 writeArgs[i] = args[index];
@@ -62,17 +64,6 @@ public class Main {
         }
         g.setOptind(index - 1);
         return writeArgs;
-    }
-
-    public static String[] getReadArgs(Getopt g, String[] args) {
-        String[] readArgs = new String[3];
-        int index = g.getOptind();  
-        for (int i = 0; index < args.length; i++) {
-            readArgs[i] = args[index];
-            index++;
-        }
-        g.setOptind(index - 1);
-        return readArgs;
     }
 
     public static void clientWriteFile(String controllerHostname, String filename) {
@@ -104,12 +95,11 @@ public class Main {
                     startChunkServer(g.getOptarg());
                     break;
                 case 'r':
-                    String[] readArgs = getReadArgs(g, args);
-                    System.out.println(Arrays.toString(readArgs));
+                    String[] readArgs = getReadWriteArgs(g, args, true);
                     clientReadFile(readArgs[0], readArgs[1], readArgs[2]);
                     break;
                 case 'w':
-                    String[] writeArgs = getWriteArgs(g, args);
+                    String[] writeArgs = getReadWriteArgs(g, args, false);
                     clientWriteFile(writeArgs[0], writeArgs[1]);
                     break;
                 case 'c':
