@@ -117,7 +117,8 @@ public class FileClient extends Client {
             FileSaver fileSaver = new FileSaver(outputFile);
 
             Integer latestVersion = 0;
-            for (int sequence = 0; sequence < message.getChunkServerHostnames().size(); sequence++) {
+            int sequence = 0;
+            for (; sequence < message.getChunkServerHostnames().size(); sequence++) {
                 String chunkServerHostname = message.getChunkServerHostnames().get(sequence);
                 log.info("Requesting chunk sequence {} from Chunk Server {}", sequence, chunkServerHostname);
 
@@ -144,7 +145,7 @@ public class FileClient extends Client {
                 processChunkReadResponse(response, fileSaver);
             }
 
-            log.info("Wrote all {} chunks to {}", message.getChunkServerHostnames().size(), filename);
+            log.info("Wrote all {} chunks to {}", sequence, filename);
             fileSaver.close();
         } else {
             log.error("File {} does not exist on the filesystem!", message.getAbsoluteFilePath());
