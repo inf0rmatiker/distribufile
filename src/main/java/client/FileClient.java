@@ -1,6 +1,5 @@
 package client;
 
-import chunkserver.ChunkServerProcessor;
 import messaging.*;
 import networking.Client;
 import org.slf4j.Logger;
@@ -73,6 +72,8 @@ public class FileClient extends Client {
             DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
             Message response = MessageFactory.getInstance().createMessage(dataInputStream);
             log.info("Received {} Message: {}", response.getType(), response);
+            clientSocket.close(); // done talking to Controller
+
             processClientWriteResponse((ClientWriteResponse) response, chunkRead);
 
             // Read next chunk and increment chunk sequence index
@@ -101,6 +102,7 @@ public class FileClient extends Client {
         DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
         Message response = MessageFactory.getInstance().createMessage(dataInputStream);
         log.info("Received {} Message: {}", response.getType(), response);
+        clientSocket.close(); // Done talking with chunk servers
     }
 
     /**
@@ -114,7 +116,9 @@ public class FileClient extends Client {
             String filename = message.getAbsoluteFilePath();
             FileSaver fileSaver = new FileSaver(outputFile);
 
-            for (int sequence = 0; sequence < message.getChunkServerHostnames().size(); sequence++) {
+            Integer latestVersion = 0;
+            int sequence = 0;
+            for (; sequence < message.getChunkServerHostnames().size(); sequence++) {
                 String chunkServerHostname = message.getChunkServerHostnames().get(sequence);
                 log.info("Requesting chunk sequence {} from Chunk Server {}", sequence, chunkServerHostname);
 
@@ -124,15 +128,27 @@ public class FileClient extends Client {
 
                 // Wait for response and process it
                 DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
-                Message response = MessageFactory.getInstance().createMessage(dataInputStream);
-                log.info("Received {} Message: {}", response.getType(), response);
-                processChunkReadResponse((ChunkReadResponse) response, fileSaver);
+                ChunkReadResponse response = (ChunkReadResponse) MessageFactory.getInstance().createMessage(dataInputStream);
+                log.info("Received {} from {} for file {}, chunk {}", response.getType(), response.getHostname(),
+                        response.getAbsoluteFilePath(), response.getSequence());
+
+                // First chunk always has the latest version, since overwriting a file with a shorter version
+                // results in the last chunks of the old version being outdated
+                if (sequence == 0) {
+                    latestVersion = response.getChunk().metadata.getVersion();
+                } else if (response.getChunk().metadata.getVersion() < latestVersion) {
+                    log.warn("Chunk version {} is outdated; done reading all latest chunks",
+                            response.getChunk().metadata.getVersion());
+                    break;
+                }
+                log.info("Chunk version {} is latest, saving to disk", response.getChunk().metadata.getVersion());
+                processChunkReadResponse(response, fileSaver);
             }
 
-            log.info("Wrote all {} chunks to {}", message.getChunkServerHostnames().size(), filename);
+            log.info("Wrote all {} chunks to {}", sequence, filename);
             fileSaver.close();
         } else {
-            // TODO: Handle Controller saying file does not exist
+            log.error("File {} does not exist on the filesystem!", message.getAbsoluteFilePath());
         }
     }
 
@@ -144,10 +160,14 @@ public class FileClient extends Client {
      * @throws IOException If unable to write to disk
      */
     public void processChunkReadResponse(ChunkReadResponse message, FileSaver fileSaver) throws IOException {
-        if (message.getIntegrityVerified()) {
-            log.info("Integrity verified for chunk {} of file {}, saving to disk...", message.getSequence(),
-                    message.getAbsoluteFilePath());
-            fileSaver.writeChunk(message.getChunk());
+        if (message.getChunkReplacements().isEmpty()) {
+            log.info("Chunk integrity successfully verified by first Chunk Server {}; no replacements took place",
+                    message.getHostname());
+        } else {
+            for (String failedChunkServer: message.getChunkReplacements()) {
+                log.warn("Chunk integrity failed at Chunk Server {}; had to get replacement chunk", failedChunkServer);
+            }
         }
+        fileSaver.writeChunk(message.getChunk().data);
     }
 }

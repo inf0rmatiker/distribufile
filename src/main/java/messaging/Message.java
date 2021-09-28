@@ -1,5 +1,7 @@
 package messaging;
 
+import chunkserver.Chunk;
+import chunkserver.ChunkIntegrity;
 import chunkserver.ChunkMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +19,8 @@ public abstract class Message {
 
     public enum MessageType {
         HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST, CHUNK_STORE_RESPONSE, CLIENT_WRITE_REQUEST, CLIENT_WRITE_RESPONSE,
-         CLIENT_READ_REQUEST, CLIENT_READ_RESPONSE, CHUNK_READ_REQUEST, CHUNK_READ_RESPONSE
+         CLIENT_READ_REQUEST, CLIENT_READ_RESPONSE, CHUNK_READ_REQUEST, CHUNK_READ_RESPONSE, CHUNK_REPLACEMENT_REQUEST,
+        CHUNK_REPLACEMENT_RESPONSE, CHUNK_REPLICATION_INFO, CHUNK_CORRECTION_NOTIFICATION
     }
 
     public String hostname, ipAddress;
@@ -287,6 +290,39 @@ public abstract class Message {
     }
 
     /**
+     * Writes a Chunk object to the DataOutputStream as follows:
+     * 1. Writes the ChunkMetadata object
+     * 2. Writes the ChunkIntegrity's slice checksums, a List of Strings
+     * 3. Writes the raw chunk data, a byte array
+     * @param dataOutputStream DataOutputStream we are writing the Chunk object to
+     * @param chunk A Chunk object
+     * @throws IOException If fails to write to DataOutputStream
+     */
+    public static void writeChunk(DataOutputStream dataOutputStream, Chunk chunk) throws IOException {
+        writeChunkMetadata(dataOutputStream, chunk.metadata);
+        writeStringList(dataOutputStream, chunk.integrity.getSliceChecksums());
+        dataOutputStream.write(chunk.data, 0, chunk.data.length);
+    }
+
+    /**
+     * Reads a Chunk object from the DataInputStream as follows:
+     * 1. Reads the ChunkMetadata object
+     * 2. Reads the ChunkIntegrity's slice checksums, a List of Strings
+     * 3. Reads the raw chunk data, a byte array
+     * 4. Constructs and returns a Chunk from the above information
+     * @param dataInputStream
+     * @return
+     * @throws IOException
+     */
+    public static Chunk readChunk(DataInputStream dataInputStream) throws IOException {
+        ChunkMetadata metadata = Message.readChunkMetadata(dataInputStream);
+        List<String> sliceChecksums = Message.readStringList(dataInputStream);
+        ChunkIntegrity integrity = new ChunkIntegrity(sliceChecksums);
+        byte[] chunkData = dataInputStream.readNBytes(metadata.getSizeBytes());
+        return new Chunk(metadata, integrity, chunkData);
+    }
+
+    /**
      * Converts an integer to a MessageType enum
      * @param type integer type
      * @return MessageType enum
@@ -303,6 +339,10 @@ public abstract class Message {
             case 7: return MessageType.CLIENT_READ_RESPONSE;
             case 8: return MessageType.CHUNK_READ_REQUEST;
             case 9: return MessageType.CHUNK_READ_RESPONSE;
+            case 10: return MessageType.CHUNK_REPLACEMENT_REQUEST;
+            case 11: return MessageType.CHUNK_REPLACEMENT_RESPONSE;
+            case 12: return MessageType.CHUNK_REPLICATION_INFO;
+            case 13: return MessageType.CHUNK_CORRECTION_NOTIFICATION;
             default: return null;
         }
     }
@@ -327,6 +367,10 @@ public abstract class Message {
             case CLIENT_READ_RESPONSE: return 7;
             case CHUNK_READ_REQUEST: return 8;
             case CHUNK_READ_RESPONSE: return 9;
+            case CHUNK_REPLACEMENT_REQUEST: return 10;
+            case CHUNK_REPLACEMENT_RESPONSE: return 11;
+            case CHUNK_REPLICATION_INFO: return 12;
+            case CHUNK_CORRECTION_NOTIFICATION: return 13;
             default: return -1;
         }
     }

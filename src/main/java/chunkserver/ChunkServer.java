@@ -96,14 +96,13 @@ public class ChunkServer {
     /**
      * Reads all the stored chunk files for their metadata, returning as a list
      * @return List of ChunkMetadata objects, one for each stored chunk file
-     * @throws IOException If unable to read any of the files
      */
-    public synchronized List<ChunkMetadata> discoverChunksMetadata() throws IOException {
+    public synchronized List<ChunkMetadata> discoverChunksMetadata() {
         List<ChunkMetadata> chunkMetadataList = new ArrayList<>();
         List<String> chunkFiles = discoverChunks();
         for (String filename: chunkFiles) {
             ChunkFilename chunkFilename = new ChunkFilename(filename, Chunk.getChunkDir());
-            chunkMetadataList.add(Chunk.readChunkMetadata(chunkFilename));
+            chunkMetadataList.add(new ChunkMetadata(chunkFilename.getClientAbsolutePath(), chunkFilename.getChunkSequence()));
         }
         return chunkMetadataList;
     }

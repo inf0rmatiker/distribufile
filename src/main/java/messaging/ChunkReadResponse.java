@@ -1,28 +1,36 @@
 package messaging;
 
+import chunkserver.Chunk;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 public class ChunkReadResponse extends Message {
 
+    // Absolute path of the file, as seen by the Client
     public String absoluteFilePath;
 
+    // Sequence index of the chunk within the file
     public Integer sequence;
 
-    public byte[] chunk;
+    // In-memory Chunk representation containing metadata and integrity information
+    public Chunk chunk;
 
-    public Boolean integrityVerified;
+    // List of Chunk Server hostnames a replacement/correction had to be made on due to failed integrity check
+    public List<String> chunkReplacements;
 
     public ChunkReadResponse(String hostname, String ipAddress, Integer port, String absoluteFilePath, Integer sequence,
-                             byte[] chunk, Boolean integrityVerified) {
+                             Chunk chunk, List<String> chunkReplacements) {
         this.hostname = hostname;
         this.ipAddress = ipAddress;
         this.port = port;
         this.absoluteFilePath = absoluteFilePath;
         this.sequence = sequence;
         this.chunk = chunk;
-        this.integrityVerified = integrityVerified;
+        this.chunkReplacements = chunkReplacements;
+
         try {
             marshal();
         } catch (IOException e) {
@@ -47,33 +55,30 @@ public class ChunkReadResponse extends Message {
         return sequence;
     }
 
-    public byte[] getChunk() {
+    public Chunk getChunk() {
         return chunk;
     }
 
-    public Boolean getIntegrityVerified() {
-        return integrityVerified;
+    public List<String> getChunkReplacements() {
+        return chunkReplacements;
     }
 
     /**
-     * In addition to the header, writes the chunk's filename and sequence.
+     * In addition to the header, writes the chunk's filename, sequence, Chunk object, and replacements made.
      * @param dataOutputStream The DataOutputStream we are writing to.
-     * @throws IOException If fails to read to DataOutputStream
+     * @throws IOException If fails to write to DataOutputStream
      */
     @Override
     public void marshal(DataOutputStream dataOutputStream) throws IOException {
         super.marshal(dataOutputStream); // first marshal common Message header
         writeString(dataOutputStream, this.absoluteFilePath);
         dataOutputStream.writeInt(this.sequence);
-
-        dataOutputStream.writeInt(this.chunk.length);
-        dataOutputStream.write(this.chunk);
-
-        dataOutputStream.writeBoolean(this.integrityVerified);
+        writeChunk(dataOutputStream, this.chunk);
+        writeStringList(dataOutputStream, this.chunkReplacements);
     }
 
     /**
-     * In addition to the header, reads the chunk's filename and sequence.
+     * In addition to the header, reads the chunk's filename, sequence, Chunk object, and replacements made.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream
      */
@@ -82,11 +87,8 @@ public class ChunkReadResponse extends Message {
         super.unmarshal(dataInputStream); // first unmarshal common Message header
         this.absoluteFilePath = readString(dataInputStream);
         this.sequence = dataInputStream.readInt();
-
-        int chunkLength = dataInputStream.readInt();
-        this.chunk = dataInputStream.readNBytes(chunkLength);
-
-        this.integrityVerified = dataInputStream.readBoolean();
+        this.chunk = readChunk(dataInputStream);
+        this.chunkReplacements = readStringList(dataInputStream);
     }
 
     @Override
@@ -104,7 +106,7 @@ public class ChunkReadResponse extends Message {
         return "> ChunkReadResponse:\n" +
                 String.format("  absoluteFilePath: %s\n", this.absoluteFilePath) +
                 String.format("  sequence: %d\n", this.sequence) +
-                String.format("  chunk: [ --- byte array of size %d --- ]\n", this.chunk.length) +
-                String.format("  integrityVerified: %b\n", this.integrityVerified);
+                String.format("  chunk: %s\n", this.chunk) +
+                String.format("  chunkReplacements: %b\n", this.chunkReplacements);
     }
 }

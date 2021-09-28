@@ -35,6 +35,13 @@ public class Chunk {
     }
 
     /**
+     * @return The boolean validity of the chunk data
+     */
+    public boolean isValid() {
+        return this.integrity.isChunkValid(this.data);
+    }
+
+    /**
      * Loads a chunk, along with its metadata and integrity information, from disk.
      * @param filename ChunkFilename of the chunk file we are trying to load
      * @return A fully-populated Chunk in-memory, along with its metadata and integrity information
@@ -61,18 +68,8 @@ public class Chunk {
         ByteArrayInputStream byteInputStream = new ByteArrayInputStream(storedChunk);
         DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
 
-        // Read chunk metadata
-        ChunkMetadata metadata = Message.readChunkMetadata(dataInputStream);
-
-        // Read chunk integrity data
-        List<String> sliceChecksums = Message.readStringList(dataInputStream);
-        ChunkIntegrity integrity = new ChunkIntegrity(sliceChecksums);
-
-        // Read actual chunk data
-        byte[] chunkData = dataInputStream.readNBytes(metadata.getSizeBytes());
-
-        // Construct Chunk
-        Chunk chunk = new Chunk(metadata, integrity, chunkData);
+        // Read Chunk
+        Chunk chunk = Message.readChunk(dataInputStream);
 
         // Clean up buffered streams and return Chunk
         dataInputStream.close();
@@ -95,9 +92,7 @@ public class Chunk {
         DataOutputStream dataOutStream = new DataOutputStream(fileOutputStream);
 
         // Write chunk metadata, integrity information, and raw data to disk
-        Message.writeChunkMetadata(dataOutStream, chunk.metadata);
-        Message.writeStringList(dataOutStream, chunk.integrity.getSliceChecksums());
-        dataOutStream.write(chunk.data, 0, chunk.data.length);
+        Message.writeChunk(dataOutStream, chunk);
 
         // Clean up output streams
         dataOutStream.flush();
@@ -196,6 +191,7 @@ public class Chunk {
     public static void setChunkDir(String dir) {
         CHUNK_DIR = dir;
     }
+
 
     @Override
     public String toString() {
