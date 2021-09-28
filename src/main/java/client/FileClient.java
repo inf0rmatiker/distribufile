@@ -72,6 +72,8 @@ public class FileClient extends Client {
             DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
             Message response = MessageFactory.getInstance().createMessage(dataInputStream);
             log.info("Received {} Message: {}", response.getType(), response);
+            clientSocket.close(); // done talking to Controller
+
             processClientWriteResponse((ClientWriteResponse) response, chunkRead);
 
             // Read next chunk and increment chunk sequence index
@@ -100,6 +102,7 @@ public class FileClient extends Client {
         DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
         Message response = MessageFactory.getInstance().createMessage(dataInputStream);
         log.info("Received {} Message: {}", response.getType(), response);
+        clientSocket.close(); // Done talking with chunk servers
     }
 
     /**
