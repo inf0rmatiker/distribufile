@@ -33,7 +33,7 @@ public class ChunkServerProcessor extends Processor {
     @Override
     public void process(Message message) {
         // TODO: Implement all possible Message request/response types for ChunkServer
-        log.info("Processing {} Message:\n{}", message.getType(), message);
+        log.info("Processing {} Message from {}:\n{}", message.getType(), message.getHostname(), message);
 
 
         switch(message.getType()) {
@@ -45,6 +45,9 @@ public class ChunkServerProcessor extends Processor {
                 break;
             case CHUNK_READ_REQUEST:
                 processChunkReadRequest((ChunkReadRequest) message);
+                break;
+            case CHUNK_REPLACEMENT_REQUEST:
+                processChunkReadRequest((ChunkReplacementRequest) message);
                 break;
             default: log.error("Unimplemented Message type \"{}\"", message.getType());
         }
@@ -148,71 +151,137 @@ public class ChunkServerProcessor extends Processor {
     }
 
     /**
-     * Processes a ChunkReadRequest directly from the Client by sending back the
-     * corresponding chunk data.
-     * @param message ChunkReadRequest
+     * Processes a ChunkReadRequest. Attempts to read the requested Chunk from file, and verify its integrity.
+     * If found valid, a ChunkReadResponse (or ChunkReplacementResponse) is sent back to the Client or Chunk Server
+     * with the loaded Chunk. If found invalid, a HeartbeatMinor is triggered to the Controller, notifying it of
+     * chunk corruption, and requesting the hostname an alternative Chunk Server holding a replica of the corrupted
+     * chunk. Once a response is received, a ChunkReplacementRequest is sent to the replica Chunk Server for its Chunk.
+     * Upon receiving the request, that Chunk Server will attempt this same exact process with its chunk file, but
+     * using a ChunkReplacementResponse as response type. The original Chunk Server, upon receiving that
+     * ChunkReplacementResponse, will then update its on-disk chunk data, and notify the Controller that it has done
+     * so via a ChunkCorrectionNotification. Finally, the correct Chunk is returned to the original Client via a
+     * ChunkReadResponse message, along with all the hosts which failed their chunk integrity checks.
+     * @param message ChunkReadRequest of a Chunk
      */
     public void processChunkReadRequest(ChunkReadRequest message) {
         String absolutePath = message.getAbsoluteFilePath();
         Integer sequence = message.getSequence();
-
         ChunkFilename chunkFilename = new ChunkFilename(absolutePath, Chunk.getChunkDir(), sequence);
+        boolean requestIsFromClient = message.getType() == Message.MessageType.CHUNK_READ_REQUEST;
+        List<String> chunkReplacements = new ArrayList<>();
+
+        // Load chunk from disk
+        Chunk requestedChunk = null;
         try {
-            Chunk requestedChunk = Chunk.load(chunkFilename);
-            ChunkIntegrity chunkIntegrity = requestedChunk.integrity;
+            requestedChunk = Chunk.load(chunkFilename);
+        } catch (IOException e) {
+            log.error("Unable to load requested Chunk {}: {}", chunkFilename, e.getMessage());
+            return;
+        }
 
-            if (chunkIntegrity.isChunkValid(requestedChunk.data)) {
-                log.info("Chunk {} is valid", chunkFilename);
-                ChunkReadResponse response = new ChunkReadResponse(Host.getHostname(), Host.getIpAddress(),
-                        Constants.CHUNK_SERVER_PORT, absolutePath, sequence, requestedChunk, true);
+        // Check validity of chunk
+        if (requestedChunk.isValid()) {
+            log.info("Chunk {} is valid", chunkFilename); // nothing more to do, just send Chunk back
+        } else { // chunk is invalid; get replacement
+            log.info("Chunk {} found to be invalid; retrieving replacement...", chunkFilename);
 
-                log.info("Sending ChunkReadResponse back to {}: {}", message.getHostname(), response);
-                sendResponse(this.socket, response);
-            } else { // Chunk is invalid; get replacement
-                log.info("Chunk {} found to be invalid; retrieving replacement...", chunkFilename);
-                HeartbeatMinor chunkCorruptionHeartbeat = new HeartbeatMinor(
-                        Host.getHostname(),
-                        Host.getIpAddress(),
-                        Constants.CHUNK_SERVER_PORT,
-                        getChunkServer().discoverChunks().size(),
-                        getChunkServer().discoverFreeSpaceAvailable(),
-                        new ArrayList<>(), // newlyAddedChunks
-                        new ArrayList<>(List.of(requestedChunk.metadata)) // corruptedChunks
-                );
+            // Send HeartbeatMinor Message to Controller, notifying it of chunk corruption and requesting a
+            // contact for replacement
+            HeartbeatMinor chunkCorruptionHeartbeat = new HeartbeatMinor(
+                    Host.getHostname(),
+                    Host.getIpAddress(),
+                    Constants.CHUNK_SERVER_PORT,
+                    getChunkServer().discoverChunks().size(),
+                    getChunkServer().discoverFreeSpaceAvailable(),
+                    new ArrayList<>(), // newlyAddedChunks
+                    new ArrayList<>(List.of(requestedChunk.metadata)) // corruptedChunks
+            );
+            log.info("Getting replication information for chunk {} from Controller", chunkFilename);
 
-                // Send notice to Controller about corrupted chunk, wait for response
+            ChunkReplicationInfo criResponse = null;
+            try {
                 Socket clientSocket = Client.sendMessage(getChunkServer().controllerHostname,
                         getChunkServer().getControllerPort(), chunkCorruptionHeartbeat);
-
-                // Wait for ChunkReplicationInfo from Controller
                 DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
-                ChunkReplicationInfo criResponse = (ChunkReplicationInfo) MessageFactory.getInstance().createMessage(dataInputStream);
+                criResponse = (ChunkReplicationInfo) MessageFactory.getInstance().createMessage(dataInputStream);
                 clientSocket.close(); // done talking to Controller
+                log.info("Received replication information for chunk {} from Controller: {}", chunkFilename, criResponse);
+            } catch (IOException e) {
+                log.error("Unable to communicate with Controller for chunk replacement: {}", e.getMessage());
+                return;
+            }
 
-                String contact = criResponse.replicationChunkServer;
-                ChunkReadRequest replacementRequest = new ChunkReadRequest(
+            String contact = criResponse.getReplicationChunkServer();
+
+            // Send ChunkReplacementRequest Message to other Chunk Server, requesting a new valid chunk
+            ChunkReplacementRequest replacementRequest = new ChunkReplacementRequest(
+                    Host.getHostname(),
+                    Host.getIpAddress(),
+                    Constants.CHUNK_SERVER_PORT,
+                    absolutePath,
+                    sequence
+            );
+            log.info("Requesting replacement for chunk {} from Chunk Server {}", chunkFilename, contact);
+
+            ChunkReplacementResponse crrResponse = null;
+            try {
+                Socket clientSocket = Client.sendMessage(contact, Constants.CHUNK_SERVER_PORT, replacementRequest);
+                DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
+                crrResponse = (ChunkReplacementResponse) MessageFactory.getInstance().createMessage(dataInputStream);
+                clientSocket.close(); // done talking to replacement Chunk Server
+                log.info("Received replacement for chunk {} from Chunk Server {}: {}", chunkFilename, contact,
+                        crrResponse);
+            } catch (IOException e) {
+                log.error("Unable to retrieve replacement for chunk {} from Chunk Server{}: {}", chunkFilename, contact,
+                        e.getMessage());
+                return;
+            }
+
+            // Replace our invalid stored chunk with valid Chunk from replacement Chunk Server
+            try {
+                Chunk.save(crrResponse.getChunk(), chunkFilename);
+                log.info("Successfully saved valid chunk replacement {} to storage", chunkFilename);
+            } catch (IOException e) {
+                log.error("Unable to replace invalid chunk {}: {}", chunkFilename, e.getMessage());
+                return;
+            }
+
+            // Notify the Controller of the chunk correction; not fatal if try fails
+            try {
+                ChunkCorrectionNotification correctionNotification = new ChunkCorrectionNotification(
                         Host.getHostname(),
                         Host.getIpAddress(),
                         Constants.CHUNK_SERVER_PORT,
                         absolutePath,
                         sequence
                 );
-
-                // Open Socket to the other Chunk Server holding our replacement chunk, and request chunk
-                clientSocket = Client.sendMessage(contact, Constants.CHUNK_SERVER_PORT, replacementRequest);
-
-                // Wait for ChunkReadResponse from replacement Chunk Server
-                dataInputStream = new DataInputStream(clientSocket.getInputStream());
-                ChunkReplacementResponse crrResponse = (ChunkReplacementResponse) MessageFactory.getInstance().createMessage(dataInputStream);
-                clientSocket.close(); // done talking to replacement Chunk Server
-
-
+                Socket clientSocket = Client.sendMessage(getChunkServer().getControllerHostname(),
+                        Constants.CHUNK_SERVER_PORT, correctionNotification);
+                clientSocket.close();
+            } catch (IOException e) {
+                log.warn("Unable to notify Controller of chunk {} correction: {}", chunkFilename, e.getMessage());
             }
 
-        } catch (IOException e) {
-            log.error("Unable to load chunk {}: {}", chunkFilename, e.getMessage());
+            // Record ourselves as one of the Chunk Servers that had to invoke a replacement procedure,
+            // along with all Chunk Servers who reported the same upstream
+            chunkReplacements.add(Host.getHostname());
+            chunkReplacements.addAll(crrResponse.getChunkReplacements());
+
+            // Update Chunk for response with fixed/validated replacement Chunk
+            requestedChunk = crrResponse.getChunk();
         }
 
+        // Send response: ChunkReadResponse if responding to Client; ChunkReplacementResponse if responding to Chunk Server
+        ChunkReadResponse response;
+        if (requestIsFromClient) {
+            response = new ChunkReadResponse(Host.getHostname(), Host.getIpAddress(), Constants.CHUNK_SERVER_PORT,
+                    absolutePath, sequence, requestedChunk, chunkReplacements);
+        } else {
+            response = new ChunkReplacementResponse(Host.getHostname(), Host.getIpAddress(),
+                    Constants.CHUNK_SERVER_PORT, absolutePath, sequence, requestedChunk, chunkReplacements);
+        }
+        log.info("Sending {} back to {}: {}", message.getType(), message.getHostname(), response);
+        sendResponse(this.socket, response);
     }
 
 }

@@ -5,26 +5,32 @@ import chunkserver.Chunk;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 public class ChunkReadResponse extends Message {
 
+    // Absolute path of the file, as seen by the Client
     public String absoluteFilePath;
 
+    // Sequence index of the chunk within the file
     public Integer sequence;
 
+    // In-memory Chunk representation containing metadata and integrity information
     public Chunk chunk;
 
-    public Boolean integrityVerified;
+    // List of Chunk Server hostnames a replacement/correction had to be made on due to failed integrity check
+    public List<String> chunkReplacements;
 
     public ChunkReadResponse(String hostname, String ipAddress, Integer port, String absoluteFilePath, Integer sequence,
-                             Chunk chunk, Boolean integrityVerified) {
+                             Chunk chunk, List<String> chunkReplacements) {
         this.hostname = hostname;
         this.ipAddress = ipAddress;
         this.port = port;
         this.absoluteFilePath = absoluteFilePath;
         this.sequence = sequence;
         this.chunk = chunk;
-        this.integrityVerified = integrityVerified;
+        this.chunkReplacements = chunkReplacements;
+
         try {
             marshal();
         } catch (IOException e) {
@@ -53,12 +59,12 @@ public class ChunkReadResponse extends Message {
         return chunk;
     }
 
-    public Boolean getIntegrityVerified() {
-        return integrityVerified;
+    public List<String> getChunkReplacements() {
+        return chunkReplacements;
     }
 
     /**
-     * In addition to the header, writes the chunk's filename, sequence, and Chunk object.
+     * In addition to the header, writes the chunk's filename, sequence, Chunk object, and replacements made.
      * @param dataOutputStream The DataOutputStream we are writing to.
      * @throws IOException If fails to write to DataOutputStream
      */
@@ -68,11 +74,11 @@ public class ChunkReadResponse extends Message {
         writeString(dataOutputStream, this.absoluteFilePath);
         dataOutputStream.writeInt(this.sequence);
         writeChunk(dataOutputStream, this.chunk);
-        dataOutputStream.writeBoolean(this.integrityVerified);
+        writeStringList(dataOutputStream, this.chunkReplacements);
     }
 
     /**
-     * In addition to the header, reads the chunk's filename, sequence, and Chunk object.
+     * In addition to the header, reads the chunk's filename, sequence, Chunk object, and replacements made.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream
      */
@@ -82,7 +88,7 @@ public class ChunkReadResponse extends Message {
         this.absoluteFilePath = readString(dataInputStream);
         this.sequence = dataInputStream.readInt();
         this.chunk = readChunk(dataInputStream);
-        this.integrityVerified = dataInputStream.readBoolean();
+        this.chunkReplacements = readStringList(dataInputStream);
     }
 
     @Override
@@ -101,6 +107,6 @@ public class ChunkReadResponse extends Message {
                 String.format("  absoluteFilePath: %s\n", this.absoluteFilePath) +
                 String.format("  sequence: %d\n", this.sequence) +
                 String.format("  chunk: %s\n", this.chunk) +
-                String.format("  integrityVerified: %b\n", this.integrityVerified);
+                String.format("  chunkReplacements: %b\n", this.chunkReplacements);
     }
 }

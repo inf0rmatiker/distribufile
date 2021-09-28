@@ -9,10 +9,7 @@ import util.Constants;
 import util.Host;
 
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 
 public class ControllerProcessor extends Processor {
 
@@ -46,6 +43,9 @@ public class ControllerProcessor extends Processor {
             case HEARTBEAT_MINOR:
                 processHeartbeatMinor((HeartbeatMinor) message);
                 break;
+            case CHUNK_CORRECTION_NOTIFICATION:
+                processChunkCorrectionNotification((ChunkCorrectionNotification) message);
+                break;
             default:
                 log.error("Unimplemented Message type \"{}\"", message.getType());
         }
@@ -69,12 +69,32 @@ public class ControllerProcessor extends Processor {
      * @param message HeartbeatMinor Message containing metadata about a Chunk Server
      */
     public void processHeartbeatMinor(HeartbeatMinor message) {
-        Vector<ChunkMetadata> chunkMetadata = new Vector<>(message.getNewlyAddedChunks());
-        ChunkServerMetadata csm = new ChunkServerMetadata(message.getHostname(), message.getFreeSpaceAvailable(),
-                message.getTotalChunksMaintained(), chunkMetadata);
+        if (message.getCorruptedChunks().isEmpty()) {
+            Vector<ChunkMetadata> chunkMetadata = new Vector<>(message.getNewlyAddedChunks());
+            ChunkServerMetadata csm = new ChunkServerMetadata(message.getHostname(), message.getFreeSpaceAvailable(),
+                    message.getTotalChunksMaintained(), chunkMetadata);
 
-        this.controller.updateChunkServerMetadata(csm);
-        this.controller.updateFilesMetadata(chunkMetadata, message.getHostname());
+            this.controller.updateChunkServerMetadata(csm);
+            this.controller.updateFilesMetadata(chunkMetadata, message.getHostname());
+        } else { // this is a notification of a corrupted chunk
+            ChunkMetadata corruptedChunk = message.getCorruptedChunks().get(0);
+            FileMetadata fileMetadata = getController().getFilesMetadata().get(corruptedChunk.getAbsoluteFilePath());
+            Set<String> replicaChunkServers = fileMetadata.getChunkServerHostnames().get(corruptedChunk.getSequence());
+
+            log.info("Removing {} as Chunk Server host for chunk {}, sequence {} until chunk is corrected",
+                    message.getHostname(), corruptedChunk.getAbsoluteFilePath(), corruptedChunk.getSequence());
+
+            replicaChunkServers.remove(message.getHostname());
+            String otherReplicaServer = replicaChunkServers.iterator().next();
+
+            log.info("Chunk {}, sequence {} corrupted on Chunk Server {}, suggesting {} for replication",
+                    corruptedChunk.getAbsoluteFilePath(), corruptedChunk.getSequence(), message.getHostname(),
+                    otherReplicaServer);
+            ChunkReplicationInfo response = new ChunkReplicationInfo(Host.getHostname(), Host.getIpAddress(),
+                    Constants.CONTROLLER_PORT, otherReplicaServer);
+            sendResponse(this.socket, response);
+        }
+
     }
 
     /**
@@ -137,6 +157,8 @@ public class ControllerProcessor extends Processor {
         ClientReadResponse response;
 
         if (getController().getFilesMetadata().containsKey(filename)) {
+
+            log.info("File {} exists, returning Chunk Server hosts for chunks...", filename);
             FileMetadata fileMetadata = getController().getFilesMetadata().get(filename);
             List<String> chunkHostnames = new ArrayList<>();
             for (Set<String> chunkServers: fileMetadata.getChunkServerHostnames()) {
@@ -148,10 +170,23 @@ public class ControllerProcessor extends Processor {
                     filename, chunkHostnames, true);
         } else {
 
+            log.info("File {} does not exist, returning search failure", filename);
+
             // Failure - unable to find FileMetadata
             response = new ClientReadResponse(Host.getHostname(), Host.getIpAddress(), Constants.CONTROLLER_PORT,
                     filename, new ArrayList<>(), false);
         }
         sendResponse(this.socket, response);
+    }
+
+    public void processChunkCorrectionNotification(ChunkCorrectionNotification message) {
+        String filename = message.getAbsoluteFilePath();
+        Integer sequence = message.getSequence();
+
+        FileMetadata fileMetadata = getController().getFilesMetadata().get(filename);
+        Set<String> chunkServers = fileMetadata.get(sequence);
+
+        log.info("Chunk {}, sequence {} marked as fixed by {}", filename, sequence, message.getHostname());
+        chunkServers.add(message.getHostname());
     }
 }
