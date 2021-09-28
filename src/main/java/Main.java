@@ -34,9 +34,9 @@ public class Main {
     public static LongOpt[] generateValidOptions() {
         LongOpt[] longopts = new LongOpt[4];
         longopts[0] = new LongOpt("chunkserver", LongOpt.REQUIRED_ARGUMENT, null, 's');
-        longopts[1] = new LongOpt("client-read", LongOpt.OPTIONAL_ARGUMENT, null, 'r');
-        longopts[2] = new LongOpt("client-write", LongOpt.OPTIONAL_ARGUMENT, null, 'w');
-        longopts[3] = new LongOpt("controller", LongOpt.REQUIRED_ARGUMENT, null, 'c');
+        longopts[1] = new LongOpt("client-read", LongOpt.REQUIRED_ARGUMENT, null, 'r');
+        longopts[2] = new LongOpt("client-write", LongOpt.REQUIRED_ARGUMENT, null, 'w');
+        longopts[3] = new LongOpt("controller", LongOpt.NO_ARGUMENT, null, 'c');
         return longopts;
     }
 
