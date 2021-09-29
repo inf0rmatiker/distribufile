@@ -47,6 +47,12 @@ public class ChunkServerProcessor extends Processor {
             case CHUNK_REPLACEMENT_REQUEST:
                 processChunkReadRequest((ChunkReplacementRequest) message);
                 break;
+            case CHUNK_REPLACEMENT_RESPONSE:
+                processChunkReplacementResponse((ChunkReplacementResponse) message);
+                break;
+            case CHUNK_REPLICATE_COMMAND:
+                processChunkReplicateCommand((ChunkReplicateCommand) message);
+                break;
             default: log.error("Unimplemented Message type \"{}\"", message.getType());
         }
     }
@@ -276,6 +282,88 @@ public class ChunkServerProcessor extends Processor {
         }
         log.info("Sending {} back to {}: {}", message.getType(), message.getHostname(), response);
         sendResponse(this.socket, response);
+    }
+
+    /**
+     * Invoked when the Controller has chosen us to store the replica of a chunk lost in a Chunk Server failure.
+     * When received unprovoked, it will be from another Chunk Server sending us a valid copy of the chunk
+     * as instructed by the Controller. Once we've stored the Chunk, we send a ChunkCorrectionNotification
+     * to the Controller, letting it know we've successfully stored the replica.
+     * @param message ChunkReplacementResponse Message containing the Chunk we need to store.
+     */
+    public void processChunkReplacementResponse(ChunkReplacementResponse message) {
+        ChunkFilename chunkFilename = new ChunkFilename(message.getAbsoluteFilePath(), Chunk.getChunkDir(),
+                message.getSequence());
+
+        // Save chunk
+        try {
+            Chunk.save(message.getChunk(), chunkFilename);
+        } catch (IOException e) {
+            log.error("Unable to save chunk {}: {}", chunkFilename, e.getMessage());
+            return;
+        }
+
+        // Notify Controller of successful chunk replication
+        try {
+            ChunkCorrectionNotification notification = new ChunkCorrectionNotification(
+                    Host.getHostname(),
+                    Host.getIpAddress(),
+                    Constants.CHUNK_SERVER_PORT,
+                    message.getAbsoluteFilePath(),
+                    message.getSequence());
+
+            Socket clientSocket = Client.sendMessage(
+                    getChunkServer().getControllerHostname(),
+                    getChunkServer().getControllerPort(),
+                    notification);
+            clientSocket.close(); // done talking to Controller
+            log.info("Successfully sent ChunkCorrectionNotification to Controller");
+        } catch (IOException e) {
+            log.error("Unable to send Controller ChunkCorrectionNotification! {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Processes a ChunkReplicateCommand from the Controller, telling us to share a chunk we host with another
+     * Chunk Server for replication. This happens when a Chunk Server fails or a chunk is lost, and replication
+     * levels for chunks need to be restored.
+     * @param message ChunkReplicateCommand the command from the Controller telling us which chunk we need to share,
+     *                and the target Chunk Server we need to share it with.
+     */
+    public void processChunkReplicateCommand(ChunkReplicateCommand message) {
+        ChunkFilename chunkFilename = new ChunkFilename(message.getAbsoluteFilePath(), Chunk.getChunkDir(),
+                message.getSequence());
+
+        // Load Chunk for replication
+        Chunk chunkForReplication;
+        try {
+            log.info("Attempting to load chunk {}", chunkFilename);
+            chunkForReplication = Chunk.load(chunkFilename);
+        } catch (IOException e) {
+            log.error("Unable to load chunk {}: {}", chunkFilename, e.getMessage());
+            return;
+        }
+
+        // Send Chunk for replication to target Chunk Server
+        try {
+            ChunkReplacementResponse request = new ChunkReplacementResponse(
+                    Host.getHostname(),
+                    Host.getIpAddress(),
+                    Constants.CHUNK_SERVER_PORT,
+                    message.getAbsoluteFilePath(),
+                    message.getSequence(),
+                    chunkForReplication,
+                    new ArrayList<>()
+            );
+
+            Socket clientSocket = Client.sendMessage(message.getTargetChunkServer(), Constants.CHUNK_SERVER_PORT,
+                    request);
+            clientSocket.close(); // done talking to other Chunk Server
+            log.info("Successfully sent ChunkReplacementResponse to {}", message.getTargetChunkServer());
+        } catch (IOException e) {
+            log.error("Unable to make ChunkReplacementResponse request to {}: {}", message.getTargetChunkServer(),
+                    e.getMessage());
+        }
     }
 
 }

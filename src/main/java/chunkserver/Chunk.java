@@ -85,7 +85,11 @@ public class Chunk {
      */
     public static void save(Chunk chunk, ChunkFilename filename) throws IOException {
         log.info("Writing chunk to {}", filename);
-        makeParentDirsIfNotExist(filename);
+        try {
+            makeParentDirsIfNotExist(filename);
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
 
         // Initialize output streams for writing to file
         FileOutputStream fileOutputStream = new FileOutputStream(filename.getChunkFilename());

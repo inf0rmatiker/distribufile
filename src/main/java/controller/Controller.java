@@ -1,5 +1,7 @@
 package controller;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -58,32 +60,44 @@ public class Controller {
         return trackedFileMetadata;
     }
 
+
     /**
-     * Updates the free space available, total chunks maintained and
-     * metadata for a specific chunk server.
-     * @param csm ChunkServerMetadata we received for updating the original
+     * Updates the ChunkServerMetadata for a given Chunk Server
+     * @param hostname String hostname of the Chunk Server we are updating
+     * @param freeSpaceAvailable long free space available in bytes
+     * @param totalChunksMaintained int total number of chunks maintained
+     * @param chunkMetadata List of ChunkMetadata objects to be added to the tracked ChunkMetadata Vector
      */
-    public synchronized void updateChunkServerMetadata(ChunkServerMetadata csm) {
-        if (this.trackedChunkServerMetadata.containsKey(csm.getHostname())) {
-            ChunkServerMetadata old = this.trackedChunkServerMetadata.get(csm.getHostname());
-            old.lastRecordedHeartbeat = csm.getLastRecordedHeartbeat(); // update heartbeat timestamp
-            old.freeSpaceAvailable = csm.getFreeSpaceAvailable();
-            old.totalChunksMaintained = csm.getTotalChunksMaintained();
-            old.chunkMetadata.addAll(csm.getChunkMetadata());
-        } else {
-            this.trackedChunkServerMetadata.put(csm.getHostname(), csm);
+    public synchronized void updateChunkServerMetadata(String hostname, long freeSpaceAvailable,
+                                                       int totalChunksMaintained, List<ChunkMetadata> chunkMetadata) {
+        if (this.trackedChunkServerMetadata.containsKey(hostname)) {
+            ChunkServerMetadata old = this.trackedChunkServerMetadata.get(hostname);
+            old.lastRecordedHeartbeat = Timestamp.from(Instant.now()); // update heartbeat timestamp
+            old.freeSpaceAvailable = freeSpaceAvailable;
+            old.totalChunksMaintained = totalChunksMaintained;
+            old.chunkMetadata.addAll(chunkMetadata);
+        } else { // not yet tracking this Chunk Server; do so now
+            this.trackedChunkServerMetadata.put(hostname, new ChunkServerMetadata(
+                    hostname, freeSpaceAvailable, totalChunksMaintained, new Vector<>(chunkMetadata)
+            ));
         }
     }
 
+
     /**
-     * Replaces the Chunk Server metadata information for a given Chunk Server,
-     * based on information from a Major heartbeat.
-     * @param csm ChunkServerMetadata we received for replacing the original
+     * Replaces the ChunkServerMetadata for a given Chunk Server
+     * @param hostname String hostname of the Chunk Server we are replacing
+     * @param freeSpaceAvailable long free space available in bytes
+     * @param totalChunksMaintained int total number of chunks maintained
+     * @param chunkMetadata List of ChunkMetadata objects to be added to the tracked ChunkMetadata Vector
      */
-    public synchronized void replaceChunkServerMetadata(ChunkServerMetadata csm) {
-        ChunkServerMetadata prev = this.trackedChunkServerMetadata.put(csm.getHostname(), csm);
+    public synchronized void replaceChunkServerMetadata(String hostname, Long freeSpaceAvailable,
+                                                        int totalChunksMaintained, List<ChunkMetadata> chunkMetadata) {
+        ChunkServerMetadata prev = this.trackedChunkServerMetadata.put(hostname, new ChunkServerMetadata(
+                hostname, freeSpaceAvailable, totalChunksMaintained, new Vector<>(chunkMetadata))
+        );
         if (prev == null) {
-            log.info("Added Chunk Server metadata: {}", csm);
+            log.info("Added Chunk Server metadata: {}", this.trackedChunkServerMetadata.get(hostname));
         }
     }
 
@@ -94,7 +108,7 @@ public class Controller {
      * @param chunksMetadata ChunkMetadata for all the chunks reported by a Chunk Server in a Major Heartbeat
      * @param chunkServerHostname The hostname of the Chunk Server holding the aforementioned chunks
      */
-    public synchronized void updateFilesMetadata(Vector<ChunkMetadata> chunksMetadata, String chunkServerHostname) {
+    public synchronized void updateFilesMetadata(List<ChunkMetadata> chunksMetadata, String chunkServerHostname) {
         for (ChunkMetadata chunkMetadata : chunksMetadata) {
             String filename = chunkMetadata.getAbsoluteFilePath();
             FileMetadata fileMetadata = this.trackedFileMetadata.getOrDefault(filename, new FileMetadata(filename));

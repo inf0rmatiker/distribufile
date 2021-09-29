@@ -65,6 +65,19 @@ public class ChunkServerMetadata {
         return timeSinceLastHeartbeat() > (Constants.HEARTBEAT_MINOR_INTERVAL + Constants.HEARTBEAT_GRACE_PERIOD);
     }
 
+    public boolean contains(String filename, Integer sequence) {
+        for (ChunkMetadata cm: this.chunkMetadata) {
+            if (filename.equals(cm.getAbsoluteFilePath()) && sequence.equals(cm.getSequence())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void incrementTotalChunksMaintained() {
+        this.totalChunksMaintained++;
+    }
+
     @Override
     public boolean equals(Object other) {
         if (other == null) return false;
