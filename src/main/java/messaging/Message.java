@@ -20,7 +20,7 @@ public abstract class Message {
     public enum MessageType {
         HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST, CHUNK_STORE_RESPONSE, CLIENT_WRITE_REQUEST, CLIENT_WRITE_RESPONSE,
          CLIENT_READ_REQUEST, CLIENT_READ_RESPONSE, CHUNK_READ_REQUEST, CHUNK_READ_RESPONSE, CHUNK_REPLACEMENT_REQUEST,
-        CHUNK_REPLACEMENT_RESPONSE, CHUNK_REPLICATION_INFO, CHUNK_CORRECTION_NOTIFICATION
+        CHUNK_REPLACEMENT_RESPONSE, CHUNK_REPLICATION_INFO, CHUNK_CORRECTION_NOTIFICATION, CHUNK_REPLICATE_COMMAND
     }
 
     public String hostname, ipAddress;
@@ -310,9 +310,9 @@ public abstract class Message {
      * 2. Reads the ChunkIntegrity's slice checksums, a List of Strings
      * 3. Reads the raw chunk data, a byte array
      * 4. Constructs and returns a Chunk from the above information
-     * @param dataInputStream
-     * @return
-     * @throws IOException
+     * @param dataInputStream DataInputStream of the file we are reading from
+     * @return Chunk Object we read from disk
+     * @throws IOException If unable to read
      */
     public static Chunk readChunk(DataInputStream dataInputStream) throws IOException {
         ChunkMetadata metadata = Message.readChunkMetadata(dataInputStream);
@@ -343,6 +343,7 @@ public abstract class Message {
             case 11: return MessageType.CHUNK_REPLACEMENT_RESPONSE;
             case 12: return MessageType.CHUNK_REPLICATION_INFO;
             case 13: return MessageType.CHUNK_CORRECTION_NOTIFICATION;
+            case 14: return MessageType.CHUNK_REPLICATE_COMMAND;
             default: return null;
         }
     }
@@ -371,6 +372,7 @@ public abstract class Message {
             case CHUNK_REPLACEMENT_RESPONSE: return 11;
             case CHUNK_REPLICATION_INFO: return 12;
             case CHUNK_CORRECTION_NOTIFICATION: return 13;
+            case CHUNK_REPLICATE_COMMAND: return 14;
             default: return -1;
         }
     }

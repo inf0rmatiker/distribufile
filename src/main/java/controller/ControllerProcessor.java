@@ -60,6 +60,13 @@ public class ControllerProcessor extends Processor {
         ChunkServerMetadata csm = new ChunkServerMetadata(message.getHostname(), message.getFreeSpaceAvailable(),
                 message.getTotalChunksMaintained(), chunkMetadata);
 
+        // Log the chunks stored by the sender
+        StringBuilder sb = new StringBuilder(String.format("Chunks stored by %s:\n", message.getHostname()));
+        for (ChunkMetadata cm: message.getChunksMetadata()) {
+            sb.append(String.format("\t%s, sequence %d\n", cm.getAbsoluteFilePath(), cm.getSequence()));
+        }
+        log.info(sb.toString());
+
         this.controller.replaceChunkServerMetadata(csm);
         this.controller.updateFilesMetadata(chunkMetadata, message.getHostname());
     }
@@ -94,7 +101,6 @@ public class ControllerProcessor extends Processor {
                     Constants.CONTROLLER_PORT, otherReplicaServer);
             sendResponse(this.socket, response);
         }
-
     }
 
     /**
@@ -179,14 +185,19 @@ public class ControllerProcessor extends Processor {
         sendResponse(this.socket, response);
     }
 
+    /**
+     * Adds the hostname of the Chunk Server message sender to the set of hosts for a given chunk, telling the
+     * Controller that it has received a valid copy of the Chunk and is now hosting it.
+     * @param message ChunkCorrectionNotification of a Chunk Server for a given chunk
+     */
     public void processChunkCorrectionNotification(ChunkCorrectionNotification message) {
         String filename = message.getAbsoluteFilePath();
         Integer sequence = message.getSequence();
 
+        // Add sender hostname to set of hosts for the chunk
         FileMetadata fileMetadata = getController().getFilesMetadata().get(filename);
         Set<String> chunkServers = fileMetadata.get(sequence);
-
-        log.info("Chunk {}, sequence {} marked as fixed by {}", filename, sequence, message.getHostname());
         chunkServers.add(message.getHostname());
+        log.info("{} now storing a valid copy of chunk {}, sequence {} ", message.getHostname(), filename, sequence);
     }
 }
