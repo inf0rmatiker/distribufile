@@ -58,6 +58,7 @@ public class HeartbeatMonitor extends TimerTask {
             String deadChunkServer = chunkServer.getHostname();
             String filename = lostChunk.getAbsoluteFilePath();
             Integer sequence = lostChunk.getSequence();
+            log.info("Initiating replacement of chunk {}, sequence {}", filename, sequence);
 
             FileMetadata fileMetadata = getController().getFilesMetadata().get(filename);
             Set<String> hosts = fileMetadata.get(sequence);
