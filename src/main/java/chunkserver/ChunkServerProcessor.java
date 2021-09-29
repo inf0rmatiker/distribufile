@@ -297,9 +297,7 @@ public class ChunkServerProcessor extends Processor {
 
         // Save chunk
         try {
-            log.info("Attempting to save chunk {}", chunkFilename);
             Chunk.save(message.getChunk(), chunkFilename);
-            log.info("Successfully saved chunk {}", chunkFilename);
         } catch (IOException e) {
             log.error("Unable to save chunk {}: {}", chunkFilename, e.getMessage());
             return;
