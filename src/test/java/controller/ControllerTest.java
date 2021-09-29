@@ -4,11 +4,8 @@ import chunkserver.ChunkMetadata;
 import org.junit.jupiter.api.Test;
 import util.Constants;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Vector;
+
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,11 +20,8 @@ public class ControllerTest {
         String testHostname = "shark";
         Integer testNumChunksMaintained = 0;
         Long testFreeSpaceAvailable = 0L;
-        Vector<ChunkMetadata> testChunkMetadata = new Vector<>();
-        ChunkServerMetadata testCSM = new ChunkServerMetadata(testHostname, testFreeSpaceAvailable,
-                testNumChunksMaintained, testChunkMetadata);
-
-        controller.updateChunkServerMetadata(testCSM);
+        List<ChunkMetadata> testChunkMetadata = new ArrayList<>();
+        controller.updateChunkServerMetadata(testHostname, testFreeSpaceAvailable, testNumChunksMaintained, testChunkMetadata);
 
         assertEquals(1, controller.getChunkServerMetadata().size());
     }
@@ -40,19 +34,18 @@ public class ControllerTest {
         String testHostname = "shark";
         Integer testNumChunksMaintained = 0;
         Long testFreeSpaceAvailable = 0L;
-        Vector<ChunkMetadata> testChunkMetadata = new Vector<>();
-        ChunkServerMetadata testCSM = new ChunkServerMetadata(testHostname, testFreeSpaceAvailable,
-                testNumChunksMaintained, testChunkMetadata);
+        List<ChunkMetadata> testChunkMetadata = new ArrayList<>();
 
-        controller.updateChunkServerMetadata(testCSM);
+        controller.updateChunkServerMetadata(testHostname, testFreeSpaceAvailable, testNumChunksMaintained, testChunkMetadata);
 
         ChunkMetadata newChunkMetadata = new ChunkMetadata("/path/to/my/file.data", 3, 39000);
         Vector<ChunkMetadata> newTestChunkMetadata = new Vector<>();
         newTestChunkMetadata.add(newChunkMetadata);
-        testCSM = new ChunkServerMetadata(testHostname, testFreeSpaceAvailable,
+        ChunkServerMetadata testCSM = new ChunkServerMetadata(testHostname, testFreeSpaceAvailable,
                 1, newTestChunkMetadata);
 
-        controller.updateChunkServerMetadata(testCSM);
+        controller.updateChunkServerMetadata(testHostname, testFreeSpaceAvailable,
+                1, newTestChunkMetadata);
 
         assertEquals(1, controller.getChunkServerMetadata().size());
         assertEquals(1, controller.getChunkServerMetadata().get("shark").totalChunksMaintained);
@@ -68,20 +61,22 @@ public class ControllerTest {
         Integer testNumChunksMaintained = 0;
         Long testFreeSpaceAvailable = 0L;
         ChunkMetadata chunkMetadata = new ChunkMetadata("/path/to/my/file.data", 3, 39000);
-        Vector<ChunkMetadata> newTestChunkMetadata = new Vector<>();
+        List<ChunkMetadata> newTestChunkMetadata = new ArrayList<>();
         newTestChunkMetadata.add(chunkMetadata);
         ChunkServerMetadata testCSM = new ChunkServerMetadata(testHostname, testFreeSpaceAvailable,
-                1, newTestChunkMetadata);
+                1, new Vector<>(newTestChunkMetadata));
 
         System.out.println(testCSM);
 
-        controller.updateChunkServerMetadata(testCSM);
+        controller.updateChunkServerMetadata(testHostname, testFreeSpaceAvailable,
+                1, newTestChunkMetadata);
         assertEquals(1, controller.getChunkServerMetadata().size());
 
         testCSM = new ChunkServerMetadata(testHostname, testFreeSpaceAvailable,
                 0, new Vector<>());
 
-        controller.replaceChunkServerMetadata(testCSM);
+        controller.replaceChunkServerMetadata(testHostname, testFreeSpaceAvailable,
+                0, new ArrayList<>());
         assertEquals(1, controller.getChunkServerMetadata().size());
         assertEquals(0, controller.getChunkServerMetadata().get("shark").totalChunksMaintained);
         assertEquals(0, controller.getChunkServerMetadata().get("shark").chunkMetadata.size());

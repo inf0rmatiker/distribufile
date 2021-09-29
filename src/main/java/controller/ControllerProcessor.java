@@ -56,9 +56,6 @@ public class ControllerProcessor extends Processor {
      * @param message HeartbeatMajor Message containing metadata about a Chunk Server
      */
     public void processHeartbeatMajor(HeartbeatMajor message) {
-        Vector<ChunkMetadata> chunkMetadata = new Vector<>(message.getChunksMetadata()); // copy into Vector
-        ChunkServerMetadata csm = new ChunkServerMetadata(message.getHostname(), message.getFreeSpaceAvailable(),
-                message.getTotalChunksMaintained(), chunkMetadata);
 
         // Log the chunks stored by the sender
         StringBuilder sb = new StringBuilder(String.format("Chunks stored by %s:\n", message.getHostname()));
@@ -67,8 +64,9 @@ public class ControllerProcessor extends Processor {
         }
         log.info(sb.toString());
 
-        this.controller.replaceChunkServerMetadata(csm);
-        this.controller.updateFilesMetadata(chunkMetadata, message.getHostname());
+        this.controller.replaceChunkServerMetadata(message.getHostname(), message.getFreeSpaceAvailable(),
+                message.getTotalChunksMaintained(), message.getChunksMetadata());
+        this.controller.updateFilesMetadata(message.getChunksMetadata(), message.getHostname());
     }
 
     /**
@@ -77,12 +75,20 @@ public class ControllerProcessor extends Processor {
      */
     public void processHeartbeatMinor(HeartbeatMinor message) {
         if (message.getCorruptedChunks().isEmpty()) {
-            Vector<ChunkMetadata> chunkMetadata = new Vector<>(message.getNewlyAddedChunks());
-            ChunkServerMetadata csm = new ChunkServerMetadata(message.getHostname(), message.getFreeSpaceAvailable(),
-                    message.getTotalChunksMaintained(), chunkMetadata);
 
-            this.controller.updateChunkServerMetadata(csm);
-            this.controller.updateFilesMetadata(chunkMetadata, message.getHostname());
+            if (!message.getNewlyAddedChunks().isEmpty()) {
+                StringBuilder sb = new StringBuilder(String.format("Chunk Server %s received new chunks\n",
+                        message.getHostname()));
+                for (ChunkMetadata cm: message.getNewlyAddedChunks()) {
+                    sb.append(String.format("\t%s, sequence %d\n", cm.getAbsoluteFilePath(), cm.getSequence()));
+                }
+                log.info(sb.toString());
+            }
+
+            this.controller.updateChunkServerMetadata(message.getHostname(), message.getFreeSpaceAvailable(),
+                    message.getTotalChunksMaintained(), message.getNewlyAddedChunks());
+            this.controller.updateFilesMetadata(message.getNewlyAddedChunks(), message.getHostname());
+
         } else { // this is a notification of a corrupted chunk
             ChunkMetadata corruptedChunk = message.getCorruptedChunks().get(0);
             FileMetadata fileMetadata = getController().getFilesMetadata().get(corruptedChunk.getAbsoluteFilePath());
@@ -128,14 +134,22 @@ public class ControllerProcessor extends Processor {
             FileMetadata fileMetadata = getController().getFilesMetadata().get(filename);
             Set<String> chunkServers = fileMetadata.get(sequence);
 
+            // Tracking file, but not that specific chunk
             if (chunkServers == null || chunkServers.isEmpty()) {
 
                 // Select Chunk Servers to use for chunk replication, and add selections to FileMetadata for tracking
                 replicationChunkServers = getController().selectBestChunkServersForReplicas();
                 fileMetadata.put(replicationChunkServers, sequence);
+                for (String host: replicationChunkServers) {
+                    ChunkServerMetadata csm = getController().getChunkServerMetadata().get(host);
+                    if (!csm.contains(filename, sequence)) {
+                        csm.incrementTotalChunksMaintained();
+                    }
+                }
+
             } else {
 
-                // Just use preexisting Chunk Server hostnames for response
+                // Just use preexisting Chunk Server hostnames for response, since this is an update
                 replicationChunkServers = fileMetadata.getChunkServerHostnames().get(sequence);
             }
         } else { // we are not already tracking file; need to do so
@@ -145,6 +159,13 @@ public class ControllerProcessor extends Processor {
             replicationChunkServers = getController().selectBestChunkServersForReplicas();
             fileMetadata.put(replicationChunkServers, sequence);
             getController().getFilesMetadata().put(filename, fileMetadata);
+
+            for (String host: replicationChunkServers) {
+                ChunkServerMetadata csm = getController().getChunkServerMetadata().get(host);
+                if (!csm.contains(filename, sequence)) {
+                    csm.incrementTotalChunksMaintained();
+                }
+            }
         }
 
         // Construct response message and send it back to client
