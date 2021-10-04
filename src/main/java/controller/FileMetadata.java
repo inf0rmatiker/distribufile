@@ -90,7 +90,8 @@ public class FileMetadata {
         if (other == this) return true;
         if (!(other instanceof FileMetadata)) return false;
         FileMetadata otherFileMetadata = (FileMetadata) other;
-        return this.absolutePath.equals(otherFileMetadata.absolutePath);
+        return (this.absolutePath.equals(otherFileMetadata.absolutePath) &&
+                this.chunkServerHostnames.equals(otherFileMetadata.getChunkServerHostnames()));
     }
 
     @Override

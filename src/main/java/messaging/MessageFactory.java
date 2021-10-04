@@ -63,6 +63,7 @@ public class MessageFactory {
                 case CHUNK_REPLICATION_INFO: return new ChunkReplicationInfo(dataInputStream);
                 case CHUNK_CORRECTION_NOTIFICATION: return new ChunkCorrectionNotification(dataInputStream);
                 case CHUNK_REPLICATE_COMMAND: return new ChunkReplicateCommand(dataInputStream);
+                case SYSTEM_REPORT_REQUEST: return new SystemReportRequest(dataInputStream);
                 default: return null;
             }
         } else {

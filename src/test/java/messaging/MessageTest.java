@@ -1,6 +1,7 @@
 package messaging;
 
 import chunkserver.ChunkMetadata;
+import controller.FileMetadata;
 import messaging.Message;
 
 import org.junit.jupiter.api.Test;
@@ -10,9 +11,7 @@ import java.io.*;
 import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -345,6 +344,45 @@ public class MessageTest {
             byteInputStream.close();
 
             assertEquals(expecteds, actuals);
+        } catch (IOException e) {
+            fail("Caught IOException!");
+        }
+    }
+
+    @Test
+    public void testWriteAndReadFileMetadata() {
+
+        String testAbsoluteFilePath = "/path/to/my/file.data";
+        Vector<Set<String>> testChunkServerHostnames = new Vector<>();
+        testChunkServerHostnames.add(new HashSet<>(Arrays.asList("penguin", "shrimp", "tuna")));
+        testChunkServerHostnames.add(new HashSet<>(Arrays.asList("shark", "swordfish", "sole")));
+        testChunkServerHostnames.add(new HashSet<>(Arrays.asList("sole", "shark", "penguin")));
+        testChunkServerHostnames.add(new HashSet<>(Arrays.asList("shrimp", "tuna", "swordfish")));
+        FileMetadata a = new FileMetadata(testAbsoluteFilePath, testChunkServerHostnames);
+
+        try {
+            // Build test byte array
+            ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+            DataOutputStream dataOutStream = new DataOutputStream(new BufferedOutputStream(byteOutStream));
+            Message.writeFileMetadata(dataOutStream, a);
+            dataOutStream.flush();
+            byte[] testBytes = byteOutStream.toByteArray();
+
+            // Clean up output streams
+            dataOutStream.close();
+            byteOutStream.close();
+
+            // Init test input stream
+            ByteArrayInputStream byteInputStream = new ByteArrayInputStream(testBytes);
+            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(byteInputStream));
+
+            FileMetadata b = Message.readFileMetadata(dataInputStream);
+
+            // Clean up input streams
+            dataInputStream.close();
+            byteInputStream.close();
+
+            assertEquals(a, b);
         } catch (IOException e) {
             fail("Caught IOException!");
         }
