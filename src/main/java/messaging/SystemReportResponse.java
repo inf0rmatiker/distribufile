@@ -15,7 +15,7 @@ public class SystemReportResponse extends Message {
 
     public List<FileMetadata> trackedFileMetadata;
 
-    public SystemReportResponse(String hostname, String ipAddress, Integer port) {
+    public SystemReportResponse(String hostname, String ipAddress, Integer port, List<FileMetadata> trackedFileMetadata) {
         this.hostname = hostname;
         this.ipAddress = ipAddress;
         this.port = port;

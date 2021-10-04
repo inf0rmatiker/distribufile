@@ -24,19 +24,21 @@ public class Main {
         sb.append("\t start controller for current machine.\n\n");
         sb.append("--client-write <controller hostname> <file>\n");
         sb.append("\t write <file> to controller with <controller hostname> it should contact.\n\n");
-        sb.append("--client-read <controller hostname> <file> <outout path>\n");
+        sb.append("--client-read <controller hostname> <file> <output path>\n");
         sb.append("\t read <file> from controller with <controller hostname> it should contact\n");
         sb.append("\t along with the output path of the file.\n\n");
-
-        System.out.println(sb.toString());
+        sb.append("--client-report <controller hostname>\n");
+        sb.append("\t get controller's system report on all tracked files\n\n");
+        System.out.println(sb);
     }
 
     public static LongOpt[] generateValidOptions() {
-        LongOpt[] longopts = new LongOpt[4];
+        LongOpt[] longopts = new LongOpt[5];
         longopts[0] = new LongOpt("chunkserver", LongOpt.REQUIRED_ARGUMENT, null, 's');
         longopts[1] = new LongOpt("client-read", LongOpt.REQUIRED_ARGUMENT, null, 'r');
         longopts[2] = new LongOpt("client-write", LongOpt.REQUIRED_ARGUMENT, null, 'w');
-        longopts[3] = new LongOpt("controller", LongOpt.NO_ARGUMENT, null, 'c');
+        longopts[3] = new LongOpt("client-report", LongOpt.REQUIRED_ARGUMENT, null, 'p');
+        longopts[4] = new LongOpt("controller", LongOpt.NO_ARGUMENT, null, 'c');
         return longopts;
     }
 
@@ -76,13 +78,23 @@ public class Main {
         }
     }
 
+    public static void clientGetReport(String controllerHostname) {
+        FileClient client = new FileClient(controllerHostname, Constants.CONTROLLER_PORT);
+        try {
+            client.getSystemReport();
+        } catch (IOException e) {
+            log.error("Error getting system report");
+            e.printStackTrace();
+        }
+    }
+
     public static void clientReadFile(String controllerHostname, String filename, String output) {
         FileClient client = new FileClient(controllerHostname, Constants.CONTROLLER_PORT);
         try {
             client.readFile(filename, output);
         } catch (IOException e) {
             e.printStackTrace();
-            log.error("Error reading file: {} to output", filename, output);
+            log.error("Error reading file: {} to output {}", filename, output);
         }
     }
 
@@ -101,6 +113,9 @@ public class Main {
                 case 'w':
                     String[] writeArgs = getReadWriteArgs(g, args, false);
                     clientWriteFile(writeArgs[0], writeArgs[1]);
+                    break;
+                case 'p':
+                    clientGetReport(g.getOptarg());
                     break;
                 case 'c':
                     startController();
