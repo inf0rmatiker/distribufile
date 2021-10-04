@@ -9,17 +9,10 @@ import java.util.List;
  * A Message concrete class which functions as a response from the controller.Controller to a Client's write request.
  * It provides a list of Chunk Servers to write the chunk to.
  */
-public class ClientWriteResponse extends Message {
+public class ClientWriteResponse extends ChunkMessage {
 
     // A list of chunk server hostnames that the chunk should be written to
     public List<String> replicationChunkServers;
-
-    // Absolute path of the file to which the chunk belongs
-    public String absoluteFilePath;
-
-    // Sequence number/index of the chunk within the file
-    public Integer sequence;
-
 
     public ClientWriteResponse(String hostname, String ipAddress, Integer port, List<String> replicationChunkServers,
                                String absoluteFilePath, Integer sequence) {
@@ -49,14 +42,6 @@ public class ClientWriteResponse extends Message {
         return replicationChunkServers;
     }
 
-    public String getAbsoluteFilePath() {
-        return absoluteFilePath;
-    }
-
-    public Integer getSequence() {
-        return sequence;
-    }
-
     /**
      * In addition to the header, writes the list of chunk servers to write the chunk to,
      * and the original chunk filename and sequence.
@@ -67,8 +52,6 @@ public class ClientWriteResponse extends Message {
     public void marshal(DataOutputStream dataOutputStream) throws IOException {
         super.marshal(dataOutputStream); // first marshal common Message header
         writeStringList(dataOutputStream, this.replicationChunkServers);
-        writeString(dataOutputStream, this.absoluteFilePath);
-        dataOutputStream.writeInt(this.sequence);
     }
 
     /**
@@ -81,8 +64,6 @@ public class ClientWriteResponse extends Message {
     public void unmarshal(DataInputStream dataInputStream) throws IOException {
         super.unmarshal(dataInputStream); // first unmarshal common Message header
         this.replicationChunkServers = readStringList(dataInputStream);
-        this.absoluteFilePath = readString(dataInputStream);
-        this.sequence = dataInputStream.readInt();
     }
 
     @Override
