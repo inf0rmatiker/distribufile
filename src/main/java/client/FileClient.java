@@ -24,6 +24,17 @@ public class FileClient extends Client {
         this.controllerPort = controllerPort;
     }
 
+    public void getSystemReport() throws IOException {
+        SystemReportRequest reportRequest = new SystemReportRequest(Host.getHostname(), Host.getIpAddress(), 0);
+        Socket clientSocket = sendMessage(this.controllerHostname, this.controllerPort, reportRequest);
+
+        // Wait for response and process it
+        DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
+        Message response = MessageFactory.getInstance().createMessage(dataInputStream);
+        log.info("Received {} Message: {}", response.getType(), response);
+        clientSocket.close(); // done talking to Controller
+    }
+
     /**
      * Retrieves an entire file from the distributed file system, and saves it to client's disk:
      * 1. Reaches out to the Controller server to retrieve a list of chunks, and from which Chunk Servers to retrieve them.

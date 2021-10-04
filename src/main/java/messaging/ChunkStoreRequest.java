@@ -8,16 +8,10 @@ import java.util.List;
  * A Message concrete class which allows the Client to send a chunk to a Chunk Server, along with the list of
  * additional Chunk Servers to replicate/forward the chunk to.
  */
-public class ChunkStoreRequest extends Message {
+public class ChunkStoreRequest extends ChunkMessage {
 
     // A list of chunk server hostnames to forward this message to for chunk replication
     public List<String> replicationChunkServers;
-
-    // The absolute path of the file to which this chunk belongs
-    public String absoluteFilePath;
-
-    // The sequence or index number of the chunk within the file
-    public Integer sequence;
 
     // The raw chunk data in bytes
     public byte[] chunkData;
@@ -51,14 +45,6 @@ public class ChunkStoreRequest extends Message {
         return replicationChunkServers;
     }
 
-    public String getAbsoluteFilePath() {
-        return absoluteFilePath;
-    }
-
-    public Integer getSequence() {
-        return sequence;
-    }
-
     public byte[] getChunkData() {
         return chunkData;
     }
@@ -72,7 +58,7 @@ public class ChunkStoreRequest extends Message {
     }
 
     /**
-     * In addition to the header, writes a list of recipients and a chunk
+     * In addition to the header, chunk filename, and sequence, writes a list of recipients and a chunk
      * to replicate.
      * @param dataOutputStream The DataOutputStream we are writing to.
      * @throws IOException If fails to read to DataOutputStream
@@ -81,8 +67,6 @@ public class ChunkStoreRequest extends Message {
     public void marshal(DataOutputStream dataOutputStream) throws IOException {
         super.marshal(dataOutputStream); // first marshal common Message header
         writeStringList(dataOutputStream, this.replicationChunkServers);
-        writeString(dataOutputStream, this.absoluteFilePath);
-        dataOutputStream.writeInt(this.sequence);
 
         // Write chunk data
         dataOutputStream.writeInt(this.chunkData.length);
@@ -90,7 +74,7 @@ public class ChunkStoreRequest extends Message {
     }
 
     /**
-     * In addition to the header, reads a list of recipients and a chunk
+     * In addition to the header, chunk filename, and sequence, reads a list of recipients and a chunk
      * to replicate.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream
@@ -99,8 +83,6 @@ public class ChunkStoreRequest extends Message {
     public void unmarshal(DataInputStream dataInputStream) throws IOException {
         super.unmarshal(dataInputStream); // first unmarshal common Message header
         this.replicationChunkServers = readStringList(dataInputStream);
-        this.absoluteFilePath = readString(dataInputStream);
-        this.sequence = dataInputStream.readInt();
 
         // Read chunk data
         int chunkSize = dataInputStream.readInt();

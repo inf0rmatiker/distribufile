@@ -43,7 +43,7 @@ public class FileMetadata {
      * @param chunkServerHostname The hostname of the Chunk Server maintaining the chunk
      * @param sequence The sequence index of the chunk within the file
      */
-    public void put(String chunkServerHostname, int sequence) {
+    public synchronized void put(String chunkServerHostname, int sequence) {
         if (this.chunkServerHostnames.size() <= sequence) {
             fillChunkGaps(sequence);
         }
@@ -55,7 +55,7 @@ public class FileMetadata {
      * @param chunkServerHostnames Set of Chunk Server hostnames for a chunk replica
      * @param sequence The sequence index of the chunk within the file
      */
-    public void put(Set<String> chunkServerHostnames, int sequence) {
+    public synchronized void put(Set<String> chunkServerHostnames, int sequence) {
         if (this.chunkServerHostnames.size() <= sequence) {
             fillChunkGaps(sequence);
         }
@@ -67,7 +67,7 @@ public class FileMetadata {
      * @param sequence int sequence of the chunk
      * @return Set of hostnames, or null if sequence is out of bounds
      */
-    public Set<String> get(int sequence) {
+    public synchronized Set<String> get(int sequence) {
         if (sequence < this.chunkServerHostnames.size()) {
             return this.chunkServerHostnames.get(sequence);
         }
@@ -84,13 +84,26 @@ public class FileMetadata {
         }
     }
 
+    /**
+     * @return a deep-copied FileMetadata object from this
+     */
+    public synchronized FileMetadata copy() {
+        String absoluteFilePathCopy = this.absolutePath;
+        Vector<Set<String>> chunkServerHostnamesCopy = new Vector<>();
+        for (Set<String> chunkHosts: this.chunkServerHostnames) {
+            chunkServerHostnamesCopy.add(new HashSet<>(chunkHosts));
+        }
+        return new FileMetadata(absoluteFilePathCopy, chunkServerHostnamesCopy);
+    }
+
     @Override
     public boolean equals(Object other) {
         if (other == null) return false;
         if (other == this) return true;
         if (!(other instanceof FileMetadata)) return false;
         FileMetadata otherFileMetadata = (FileMetadata) other;
-        return this.absolutePath.equals(otherFileMetadata.absolutePath);
+        return (this.absolutePath.equals(otherFileMetadata.absolutePath) &&
+                this.chunkServerHostnames.equals(otherFileMetadata.getChunkServerHostnames()));
     }
 
     @Override

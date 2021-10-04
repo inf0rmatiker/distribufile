@@ -44,6 +44,7 @@ public abstract class Processor implements Runnable {
      * @param message The Message containing the response.
      */
     public static void sendResponse(Socket socket, Message message) {
+        log.info("Sending {} response", message.getType());
         if (socket != null && socket.isConnected()) {
             try {
                 socket.getOutputStream().write(message.getMarshaledBytes());

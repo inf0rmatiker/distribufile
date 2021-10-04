@@ -5,13 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class ChunkStoreResponse extends Message {
-
-    // The absolute path of the file to which the chunk belongs
-    public String absoluteFilePath;
-
-    // The sequence number of the chunk within the file
-    public Integer sequence;
+public class ChunkStoreResponse extends ChunkMessage {
 
     // Flag indicating success or failure for chunk storage/replication
     public Boolean success;
@@ -40,20 +34,12 @@ public class ChunkStoreResponse extends Message {
         return MessageType.CHUNK_STORE_RESPONSE;
     }
 
-    public String getAbsoluteFilePath() {
-        return absoluteFilePath;
-    }
-
-    public Integer getSequence() {
-        return sequence;
-    }
-
     public Boolean getSuccess() {
         return success;
     }
 
     /**
-     * In addition to the header, writes the chunk's filename, sequence, and flag
+     * In addition to the header, chunk filename, and sequence, writes the flag
      * indicating storage success or failure.
      * @param dataOutputStream The DataOutputStream we are writing to.
      * @throws IOException If fails to read to DataOutputStream
@@ -61,13 +47,11 @@ public class ChunkStoreResponse extends Message {
     @Override
     public void marshal(DataOutputStream dataOutputStream) throws IOException {
         super.marshal(dataOutputStream); // first marshal common Message header
-        writeString(dataOutputStream, this.absoluteFilePath);
-        dataOutputStream.writeInt(this.sequence);
         dataOutputStream.writeBoolean(this.success);
     }
 
     /**
-     * In addition to the header, reads the chunk's filename, sequence, and flag
+     * In addition to the header, chunk filename, and sequence, reads the flag
      * indicating storage success or failure.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream
@@ -75,8 +59,6 @@ public class ChunkStoreResponse extends Message {
     @Override
     public void unmarshal(DataInputStream dataInputStream) throws IOException {
         super.unmarshal(dataInputStream); // first unmarshal common Message header
-        this.absoluteFilePath = readString(dataInputStream);
-        this.sequence = dataInputStream.readInt();
         this.success = dataInputStream.readBoolean();
     }
 

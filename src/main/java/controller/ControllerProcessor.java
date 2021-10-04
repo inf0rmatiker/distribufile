@@ -46,6 +46,9 @@ public class ControllerProcessor extends Processor {
             case CHUNK_CORRECTION_NOTIFICATION:
                 processChunkCorrectionNotification((ChunkCorrectionNotification) message);
                 break;
+            case SYSTEM_REPORT_REQUEST:
+                processSystemReportRequest((SystemReportRequest) message);
+                break;
             default:
                 log.error("Unimplemented Message type \"{}\"", message.getType());
         }
@@ -220,5 +223,20 @@ public class ControllerProcessor extends Processor {
         Set<String> chunkServers = fileMetadata.get(sequence);
         chunkServers.add(message.getHostname());
         log.info("{} now storing a valid copy of chunk {}, sequence {} ", message.getHostname(), filename, sequence);
+    }
+
+    /**
+     * Responds to a Client's request for system status information with a SystemReportResponse message.
+     * @param message SystemReportRequest Message request
+     */
+    public void processSystemReportRequest(SystemReportRequest message) {
+        List<FileMetadata> fileMetadataCopy = new ArrayList<>();
+        for (FileMetadata fileMetadata: getController().getFilesMetadata().values()) {
+            fileMetadataCopy.add(fileMetadata.copy());
+        }
+
+        SystemReportResponse response = new SystemReportResponse(Host.getHostname(), Host.getIpAddress(),
+                Constants.CONTROLLER_PORT, fileMetadataCopy);
+        sendResponse(this.socket, response);
     }
 }

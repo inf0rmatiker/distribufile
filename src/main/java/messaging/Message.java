@@ -3,15 +3,16 @@ package messaging;
 import chunkserver.Chunk;
 import chunkserver.ChunkIntegrity;
 import chunkserver.ChunkMetadata;
+import controller.FileMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.Host;
 
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.UnknownHostException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public abstract class Message {
 
@@ -20,7 +21,8 @@ public abstract class Message {
     public enum MessageType {
         HEARTBEAT_MINOR, HEARTBEAT_MAJOR, CHUNK_STORE_REQUEST, CHUNK_STORE_RESPONSE, CLIENT_WRITE_REQUEST, CLIENT_WRITE_RESPONSE,
          CLIENT_READ_REQUEST, CLIENT_READ_RESPONSE, CHUNK_READ_REQUEST, CHUNK_READ_RESPONSE, CHUNK_REPLACEMENT_REQUEST,
-        CHUNK_REPLACEMENT_RESPONSE, CHUNK_REPLICATION_INFO, CHUNK_CORRECTION_NOTIFICATION, CHUNK_REPLICATE_COMMAND
+        CHUNK_REPLACEMENT_RESPONSE, CHUNK_REPLICATION_INFO, CHUNK_CORRECTION_NOTIFICATION, CHUNK_REPLICATE_COMMAND,
+        SYSTEM_REPORT_REQUEST, SYSTEM_REPORT_RESPONSE
     }
 
     public String hostname, ipAddress;
@@ -125,6 +127,26 @@ public abstract class Message {
     // --- Static helper functions ---
 
     /**
+     * Writes an integer to the output stream.
+     * @param dataOutputStream The DataOutputStream we are writing to.
+     * @param value The int we are writing.
+     * @throws IOException If fails to write to the DataOutputStream
+     */
+    public static void writeInt(DataOutputStream dataOutputStream, int value) throws IOException {
+        dataOutputStream.writeInt(value);
+    }
+
+    /**
+     * Reads and returns an integer to the input stream.
+     * @param dataInputStream The DataInputStream we are reading from.
+     * @return The int we read.
+     * @throws IOException If fails to read from the DataInputStream
+     */
+    public static int readInt(DataInputStream dataInputStream) throws IOException {
+        return dataInputStream.readInt();
+    }
+
+    /**
      * Reads a string from the DataInputStream passed in as follows:
      * 1. Reads the string length as an integer.
      * 2. Reads the string bytes; creates and returns a string from said bytes.
@@ -161,7 +183,7 @@ public abstract class Message {
      * @throws IOException If fails to read from DataInputStream
      */
     public static String[] readStringArray(DataInputStream dataInputStream) throws IOException {
-        int count = dataInputStream.readInt();
+        int count = readInt(dataInputStream);
         String[] array = new String[count];
         for (int i = 0; i < count; i++) {
             array[i] = readString(dataInputStream);
@@ -178,7 +200,7 @@ public abstract class Message {
      * @throws IOException If fails to write to DataOutputStream
      */
     public static void writeStringArray(DataOutputStream dataOutputStream, String[] values) throws IOException {
-        dataOutputStream.writeInt(values.length);
+        writeInt(dataOutputStream, values.length);
         for (String value: values) {
             writeString(dataOutputStream, value);
         }
@@ -193,7 +215,7 @@ public abstract class Message {
      * @throws IOException If fails to read from DataInputStream
      */
     public static List<String> readStringList(DataInputStream dataInputStream) throws IOException {
-        int count = dataInputStream.readInt();
+        int count = readInt(dataInputStream);
         List<String> list = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             list.add(readString(dataInputStream));
@@ -210,11 +232,40 @@ public abstract class Message {
      * @throws IOException If fails to write to DataOutputStream
      */
     public static void writeStringList(DataOutputStream dataOutputStream, List<String> values) throws IOException {
-        dataOutputStream.writeInt(values.size());
+        writeInt(dataOutputStream, values.size());
         for (String value: values) {
             writeString(dataOutputStream, value);
         }
     }
+
+    /**
+     * Writes a Set of Strings to the output stream.
+     * @param dataOutputStream The DataOutputStream we are writing to.
+     * @param values The Set<String> we are writing.
+     * @throws IOException If fails to write to DataOutputStream
+     */
+    public static void writeStringSet(DataOutputStream dataOutputStream, Set<String> values) throws IOException {
+        writeInt(dataOutputStream, values.size());
+        for (String value: values) {
+            writeString(dataOutputStream, value);
+        }
+    }
+
+    /**
+     * Reads a Set of Strings from the input stream.
+     * @param dataInputStream The DataInputStream we are reading from.
+     * @return The Set of Strings we read
+     * @throws IOException If fails to read from the DataInputStream
+     */
+    public static Set<String> readStringSet(DataInputStream dataInputStream) throws IOException {
+        int count = readInt(dataInputStream);
+        Set<String> values = new HashSet<>();
+        for (int i = 0; i < count; i++) {
+            values.add(readString(dataInputStream));
+        }
+        return values;
+    }
+
 
     /**
      * Reads a ChunkMetadata object from the DataInputStream as follows:
@@ -323,6 +374,67 @@ public abstract class Message {
     }
 
     /**
+     * Writes a FileMetadata object to the output stream.
+     * @param dataOutputStream DataOutputStream we are writing to.
+     * @param metadata FileMetadata object we want to write.
+     * @throws IOException If fails to write to the DataOutputStream
+     */
+    public static void writeFileMetadata(DataOutputStream dataOutputStream, FileMetadata metadata) throws IOException {
+        writeString(dataOutputStream, metadata.getAbsolutePath());
+        Vector<Set<String>> chunkServerHostnames = metadata.getChunkServerHostnames();
+        dataOutputStream.writeInt(chunkServerHostnames.size());
+        for (Set<String> chunkHosts: chunkServerHostnames) {
+            writeStringSet(dataOutputStream, chunkHosts);
+        }
+    }
+
+    /**
+     * Reads a FileMetadata object from the input stream.
+     * @param dataInputStream DataInputStream we are reading from.
+     * @return FileMetadata object we read from the input stream.
+     * @throws IOException If fails to read from the DataInputStream.
+     */
+    public static FileMetadata readFileMetadata(DataInputStream dataInputStream) throws IOException {
+        String absoluteFilePath = readString(dataInputStream);
+        Vector<Set<String>> chunkServerHostnames = new Vector<>();
+        int count = readInt(dataInputStream);
+        for (int i = 0; i < count; i++) {
+            chunkServerHostnames.add(readStringSet(dataInputStream));
+        }
+        return new FileMetadata(absoluteFilePath, chunkServerHostnames);
+    }
+
+    /**
+     * Writes a List of FileMetadata objects to the output stream.
+     * @param dataOutputStream DataOutputStream we are writing to.
+     * @param metadataList List<FileMetadata> we are writing.
+     * @throws IOException If fails to write to DataOutputStream
+     */
+    public static void writeFileMetadataList(DataOutputStream dataOutputStream, List<FileMetadata> metadataList)
+            throws IOException {
+        writeInt(dataOutputStream, metadataList.size());
+        for (FileMetadata fileMetadata: metadataList) {
+            writeFileMetadata(dataOutputStream, fileMetadata);
+        }
+    }
+
+    /**
+     * Reads a List of FileMetadata objects from the input stream.
+     * @param dataInputStream DataInputStream we are reading from.
+     * @return List<FileMetadata> we read
+     * @throws IOException If fails to read from the DataInputStream.
+     */
+    public static List<FileMetadata> readFileMetadataList(DataInputStream dataInputStream) throws IOException {
+        int count = readInt(dataInputStream);
+        List<FileMetadata> metadataList = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            metadataList.add(readFileMetadata(dataInputStream));
+        }
+        return metadataList;
+    }
+
+
+    /**
      * Converts an integer to a MessageType enum
      * @param type integer type
      * @return MessageType enum
@@ -344,6 +456,8 @@ public abstract class Message {
             case 12: return MessageType.CHUNK_REPLICATION_INFO;
             case 13: return MessageType.CHUNK_CORRECTION_NOTIFICATION;
             case 14: return MessageType.CHUNK_REPLICATE_COMMAND;
+            case 15: return MessageType.SYSTEM_REPORT_REQUEST;
+            case 16: return MessageType.SYSTEM_REPORT_RESPONSE;
             default: return null;
         }
     }
@@ -373,6 +487,8 @@ public abstract class Message {
             case CHUNK_REPLICATION_INFO: return 12;
             case CHUNK_CORRECTION_NOTIFICATION: return 13;
             case CHUNK_REPLICATE_COMMAND: return 14;
+            case SYSTEM_REPORT_REQUEST: return 15;
+            case SYSTEM_REPORT_RESPONSE: return 16;
             default: return -1;
         }
     }

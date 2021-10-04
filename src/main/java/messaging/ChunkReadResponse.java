@@ -7,13 +7,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.List;
 
-public class ChunkReadResponse extends Message {
-
-    // Absolute path of the file, as seen by the Client
-    public String absoluteFilePath;
-
-    // Sequence index of the chunk within the file
-    public Integer sequence;
+public class ChunkReadResponse extends ChunkMessage {
 
     // In-memory Chunk representation containing metadata and integrity information
     public Chunk chunk;
@@ -47,14 +41,6 @@ public class ChunkReadResponse extends Message {
         return MessageType.CHUNK_READ_RESPONSE;
     }
 
-    public String getAbsoluteFilePath() {
-        return absoluteFilePath;
-    }
-
-    public Integer getSequence() {
-        return sequence;
-    }
-
     public Chunk getChunk() {
         return chunk;
     }
@@ -64,29 +50,25 @@ public class ChunkReadResponse extends Message {
     }
 
     /**
-     * In addition to the header, writes the chunk's filename, sequence, Chunk object, and replacements made.
+     * In addition to the header, chunk filename, and sequence, writes the Chunk object, and replacements made.
      * @param dataOutputStream The DataOutputStream we are writing to.
      * @throws IOException If fails to write to DataOutputStream
      */
     @Override
     public void marshal(DataOutputStream dataOutputStream) throws IOException {
         super.marshal(dataOutputStream); // first marshal common Message header
-        writeString(dataOutputStream, this.absoluteFilePath);
-        dataOutputStream.writeInt(this.sequence);
         writeChunk(dataOutputStream, this.chunk);
         writeStringList(dataOutputStream, this.chunkReplacements);
     }
 
     /**
-     * In addition to the header, reads the chunk's filename, sequence, Chunk object, and replacements made.
+     * In addition to the header, chunk filename, and sequence, reads the Chunk object, and replacements made.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream
      */
     @Override
     public void unmarshal(DataInputStream dataInputStream) throws IOException {
         super.unmarshal(dataInputStream); // first unmarshal common Message header
-        this.absoluteFilePath = readString(dataInputStream);
-        this.sequence = dataInputStream.readInt();
         this.chunk = readChunk(dataInputStream);
         this.chunkReplacements = readStringList(dataInputStream);
     }
