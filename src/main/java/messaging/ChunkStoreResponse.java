@@ -39,7 +39,7 @@ public class ChunkStoreResponse extends ChunkMessage {
     }
 
     /**
-     * In addition to the header, writes the chunk's filename, sequence, and flag
+     * In addition to the header, chunk filename, and sequence, writes the flag
      * indicating storage success or failure.
      * @param dataOutputStream The DataOutputStream we are writing to.
      * @throws IOException If fails to read to DataOutputStream
@@ -51,7 +51,7 @@ public class ChunkStoreResponse extends ChunkMessage {
     }
 
     /**
-     * In addition to the header, reads the chunk's filename, sequence, and flag
+     * In addition to the header, chunk filename, and sequence, reads the flag
      * indicating storage success or failure.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream

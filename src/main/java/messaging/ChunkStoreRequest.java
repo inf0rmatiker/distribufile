@@ -58,7 +58,7 @@ public class ChunkStoreRequest extends ChunkMessage {
     }
 
     /**
-     * In addition to the header, writes a list of recipients and a chunk
+     * In addition to the header, chunk filename, and sequence, writes a list of recipients and a chunk
      * to replicate.
      * @param dataOutputStream The DataOutputStream we are writing to.
      * @throws IOException If fails to read to DataOutputStream
@@ -74,7 +74,7 @@ public class ChunkStoreRequest extends ChunkMessage {
     }
 
     /**
-     * In addition to the header, reads a list of recipients and a chunk
+     * In addition to the header, chunk filename, and sequence, reads a list of recipients and a chunk
      * to replicate.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream

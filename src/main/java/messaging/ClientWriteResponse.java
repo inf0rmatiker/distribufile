@@ -43,8 +43,7 @@ public class ClientWriteResponse extends ChunkMessage {
     }
 
     /**
-     * In addition to the header, writes the list of chunk servers to write the chunk to,
-     * and the original chunk filename and sequence.
+     * In addition to the header, chunk filename, and sequence, writes the list of chunk servers to write the chunk to.
      * @param dataOutputStream The DataOutputStream we are writing to.
      * @throws IOException If fails to read to DataOutputStream
      */
@@ -55,8 +54,7 @@ public class ClientWriteResponse extends ChunkMessage {
     }
 
     /**
-     * In addition to the header, reads the list of chunk servers to write the chunk to,
-     * and the original chunk filename and sequence.
+     * In addition to the header, chunk filename, and sequence, reads the list of chunk servers to write the chunk to.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream
      */

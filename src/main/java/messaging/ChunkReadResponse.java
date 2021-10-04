@@ -50,7 +50,7 @@ public class ChunkReadResponse extends ChunkMessage {
     }
 
     /**
-     * In addition to the header, writes the chunk's filename, sequence, Chunk object, and replacements made.
+     * In addition to the header, chunk filename, and sequence, writes the Chunk object, and replacements made.
      * @param dataOutputStream The DataOutputStream we are writing to.
      * @throws IOException If fails to write to DataOutputStream
      */
@@ -62,7 +62,7 @@ public class ChunkReadResponse extends ChunkMessage {
     }
 
     /**
-     * In addition to the header, reads the chunk's filename, sequence, Chunk object, and replacements made.
+     * In addition to the header, chunk filename, and sequence, reads the Chunk object, and replacements made.
      * @param dataInputStream The DataInputStream we are reading from.
      * @throws IOException If fails to read from DataInputStream
      */
