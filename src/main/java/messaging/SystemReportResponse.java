@@ -48,6 +48,11 @@ public class SystemReportResponse extends Message {
 
     @Override
     public String toString() {
-        return "> SystemReportResponse";
+        StringBuilder sb = new StringBuilder("> SystemReportResponse");
+        for (FileMetadata fm: trackedFileMetadata) {
+            sb.append(fm);
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 }
