@@ -96,7 +96,7 @@ public class ChunkIntegrity {
                 // Resize slice if necessary (for last slice in chunk)
                 if (bytesRead < Constants.SLICE_SIZE) {
                     byte[] resizedSlice = new byte[bytesRead];
-                    System.arraycopy(chunk, 0, resizedSlice, 0, resizedSlice.length);
+                    System.arraycopy(slice, 0, resizedSlice, 0, resizedSlice.length);
                     slice = resizedSlice;
                 }
 
