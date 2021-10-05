@@ -4,6 +4,7 @@ import controller.ChunkServerMetadata;
 import controller.FileMetadata;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class SystemReportResponse extends Message {
         this.hostname = hostname;
         this.ipAddress = ipAddress;
         this.port = port;
+        this.trackedFileMetadata = trackedFileMetadata;
         try {
             marshal();
         } catch (IOException e) {
@@ -37,6 +39,28 @@ public class SystemReportResponse extends Message {
 
     public List<FileMetadata> getTrackedFileMetadata() {
         return trackedFileMetadata;
+    }
+
+    /**
+     * In addition to the header, writes the tracked FileMetadata objects
+     * @param dataOutputStream The DataOutputStream we are writing to.
+     * @throws IOException If fails to write to DataOutputStream
+     */
+    @Override
+    public void marshal(DataOutputStream dataOutputStream) throws IOException {
+        super.marshal(dataOutputStream); // first marshal common Message header
+        writeFileMetadataList(dataOutputStream, this.trackedFileMetadata);
+    }
+
+    /**
+     * In addition to the header, reads the tracked FileMetadata objects
+     * @param dataInputStream The DataInputStream we are reading from.
+     * @throws IOException If fails to read from DataInputStream
+     */
+    @Override
+    public void unmarshal(DataInputStream dataInputStream) throws IOException {
+        super.unmarshal(dataInputStream); // first unmarshal common Message header
+        this.trackedFileMetadata = readFileMetadataList(dataInputStream);
     }
 
     @Override
