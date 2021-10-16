@@ -3,13 +3,13 @@
 function print_usage() {
   echo -e "\nUSAGE\n\tdistribufile.sh [OPTIONS]\n"
   echo -e "OPTIONS\n"
-  echo -e "\n\t--cleanup\n"
-  echo -e "\n\t--shutdown\n"
-  echo -e "\n\t--chunkservers\n"
-  echo -e "\n\t--controller\n"
-  echo -e "\n\t--client-read\n"
-  echo -e "\n\t--client-report\n"
-  echo -e "\n\t--status\n"
+  echo -e "\t--cleanup\t\t\tRemove all artifacts/chunks stored on all Chunk Servers in cluster\n"
+  echo -e "\t--shutdown\t\t\tShuts down all Chunk Servers first, then the Controller\n"
+  echo -e "\t--chunkservers\t\t\tStarts the Chunk Servers\n"
+  echo -e "\t--controller\t\t\tStarts the Controller\n"
+  echo -e "\t--client-read <file> <out>\tReads a file specified by <file> and outputs it as <out> file\n"
+  echo -e "\t--client-write <file>\t\tWrites a file specified by <file> to the distributed filesystem\n"
+  echo -e "\t--status\t\t\tRetrieves a diagnostic report of the system from the Controller\n"
 }
 
 function client_read {
