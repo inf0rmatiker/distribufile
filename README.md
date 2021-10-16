@@ -4,7 +4,7 @@ A distributed, replicated, and fault-tolerant file system written in Java. This 
 > *Authors*: [Caleb Carlson](https://github.com/inf0rmatiker), [Matthew Fernst](https://github.com/matthewfernst)
 
 # Table of Contents
-1. [System Description](#System Description)
+1. [System Description](#System-Description)
 2. [Usage](#Usage)
 
 
