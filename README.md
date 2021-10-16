@@ -1,12 +1,12 @@
 # distribufile
 
+A distributed, replicated, and fault-tolerant file system written in Java. This project was developed for [CS555: Distributed Systems](https://www.cs.colostate.edu/~cs555/index.html), [Assignment 1](docs/CS555-Fall2021-HW1.pdf).
+> *Authors*: [Caleb Carlson](https://github.com/inf0rmatiker), [Matthew Fernst](https://github.com/matthewfernst)
+
 # Table of Contents
 1. [System Description](#System Description)
 2. [Usage](#Usage)
 
-_Authors_: [Caleb Carlson](https://github.com/inf0rmatiker), [Matthew Fernst](https://github.com/matthewfernst)
-
-A distributed, replicated, and fault-tolerant file system written in Java. This project was developed for [CS555: Distributed Systems](https://www.cs.colostate.edu/~cs555/index.html), [Assignment 1](docs/CS555-Fall2021-HW1.pdf).
 
 ## System Description
 
