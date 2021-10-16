@@ -1,5 +1,11 @@
 # distribufile
 
+# Table of Contents
+1. [System Description](#System Description)
+2. [Usage](#Usage)
+
+_Authors_: [Caleb Carlson](https://github.com/inf0rmatiker), [Matthew Fernst](https://github.com/matthewfernst)
+
 A distributed, replicated, and fault-tolerant file system written in Java. This project was developed for [CS555: Distributed Systems](https://www.cs.colostate.edu/~cs555/index.html), [Assignment 1](docs/CS555-Fall2021-HW1.pdf).
 
 ## System Description
@@ -119,6 +125,8 @@ stored chunks.
 
 ## Usage
 
+### Configuration
+
 You must first specify the Controller node hostname and Chunk Server hostnames by editing the `config/` files,
 with 1 hostname per line in each of the respective files. Use a minimum of 3 Chunk Servers.
 
@@ -136,7 +144,13 @@ halibut
 bass
 ```
 
-Once you have the configuration files established, use `distribufile.sh` to run the system (this requires key-less SSH):
+### Building
+
+Just clone this repository to one of your machines in the cluster, and build it with `./gradlew clean build`.
+
+### Running
+
+Once you have the configuration files established and the program built, use `distribufile.sh` to run the system (this requires key-less SSH):
 
 ```
 USAGE
