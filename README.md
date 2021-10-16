@@ -144,19 +144,19 @@ USAGE
 
 OPTIONS
 
-	--cleanup			        Remove all artifacts/chunks stored on all Chunk Servers in cluster
+	--cleanup                  Remove all artifacts/chunks stored on all Chunk Servers in cluster
 
-	--shutdown			        Shuts down all Chunk Servers first, then the Controller
+	--shutdown                 Shuts down all Chunk Servers first, then the Controller
 
-	--chunkservers			    Starts the Chunk Servers
+	--chunkservers             Starts the Chunk Servers
 
-	--controller			    Starts the Controller
+	--controller               Starts the Controller
 
-	--client-read <file> <out>	Reads a file specified by <file> and outputs it as <out> file
+	--client-read <file> <out> Reads a file specified by <file> and outputs it as <out> file
 
-	--client-write <file>		Writes a file specified by <file> to the distributed filesystem
+	--client-write <file>      Writes a file specified by <file> to the distributed filesystem
 
-	--status			        Retrieves a diagnostic report of the system from the Controller
+	--status                   Retrieves a diagnostic report of the system from the Controller
 ```
 
 **Example**: 
